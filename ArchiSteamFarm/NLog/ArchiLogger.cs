@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,8 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Compatibility;
+using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Localization;
 using JetBrains.Annotations;
 using NLog;
@@ -173,7 +175,7 @@ namespace ArchiSteamFarm.NLog {
 			string message = string.Format(CultureInfo.CurrentCulture, DateTime.Now + " " + Strings.ErrorEarlyFatalExceptionInfo, SharedInfo.Version) + Environment.NewLine;
 
 			try {
-				await RuntimeCompatibility.File.WriteAllTextAsync(SharedInfo.LogFile, message).ConfigureAwait(false);
+				await File.WriteAllTextAsync(SharedInfo.LogFile, message).ConfigureAwait(false);
 			} catch {
 				// Ignored, we can't do anything about this
 			}
@@ -188,7 +190,7 @@ namespace ArchiSteamFarm.NLog {
 				message = string.Format(CultureInfo.CurrentCulture, Strings.ErrorEarlyFatalExceptionPrint, previousMethodName, exception.Message, exception.StackTrace) + Environment.NewLine;
 
 				try {
-					await RuntimeCompatibility.File.AppendAllTextAsync(SharedInfo.LogFile, message).ConfigureAwait(false);
+					await File.AppendAllTextAsync(SharedInfo.LogFile, message).ConfigureAwait(false);
 				} catch {
 					// Ignored, we can't do anything about this
 				}
@@ -209,17 +211,19 @@ namespace ArchiSteamFarm.NLog {
 			}
 		}
 
-		internal void LogInvite(SteamID steamID, [CallerMemberName] string? previousMethodName = null) {
+		internal void LogInvite(SteamID steamID, bool? handled = null, [CallerMemberName] string? previousMethodName = null) {
 			if ((steamID == null) || (steamID.AccountType == EAccountType.Invalid)) {
 				throw new ArgumentNullException(nameof(steamID));
 			}
 
 			ulong steamID64 = steamID;
 
-			string loggedMessage = previousMethodName + "() " + steamID.AccountType + " " + steamID64;
+			string loggedMessage = previousMethodName + "() " + steamID.AccountType + " " + steamID64 + (handled.HasValue ? " = " + handled.Value : "");
 
 			LogEventInfo logEventInfo = new(LogLevel.Trace, Logger.Name, loggedMessage);
+
 			logEventInfo.Properties["AccountType"] = steamID.AccountType;
+			logEventInfo.Properties["Handled"] = handled;
 			logEventInfo.Properties["SteamID"] = steamID64;
 
 			Logger.Log(logEventInfo);

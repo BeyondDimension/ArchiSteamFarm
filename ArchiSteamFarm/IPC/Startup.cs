@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,15 +19,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NETFRAMEWORK
+using ArchiSteamFarm.Compatibility;
+using Newtonsoft.Json.Converters;
+using File = System.IO.File;
+using Path = System.IO.Path;
+#else
+using System.IO;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Net;
 using System.Reflection;
+using ArchiSteamFarm.Core;
 using ArchiSteamFarm.IPC.Integration;
 using ArchiSteamFarm.Localization;
 using ArchiSteamFarm.Plugins;
+using ArchiSteamFarm.Storage;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -39,10 +48,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-
-#if NETFRAMEWORK
-using Newtonsoft.Json.Converters;
-#endif
 
 namespace ArchiSteamFarm.IPC {
 	internal sealed class Startup {
@@ -125,7 +130,7 @@ namespace ArchiSteamFarm.IPC {
 					options.DisplayRequestDuration();
 					options.EnableDeepLinking();
 					options.ShowExtensions();
-					options.SwaggerEndpoint("/swagger/" + SharedInfo.ASF + "/swagger.json", SharedInfo.ASF + " API");
+					options.SwaggerEndpoint(SharedInfo.ASF + "/swagger.json", SharedInfo.ASF + " API");
 				}
 			);
 		}

@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,8 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Web;
+using ArchiSteamFarm.Web.Responses;
 using Newtonsoft.Json;
 
 namespace ArchiSteamFarm.CustomPlugins.ExamplePlugin {
@@ -36,11 +38,11 @@ namespace ArchiSteamFarm.CustomPlugins.ExamplePlugin {
 				throw new ArgumentNullException(nameof(webBrowser));
 			}
 
-			const string request = URL + "/meow";
+			Uri request = new(URL + "/meow");
 
-			WebBrowser.ObjectResponse<MeowResponse>? response = await webBrowser.UrlGetToJsonObject<MeowResponse>(request).ConfigureAwait(false);
+			ObjectResponse<MeowResponse>? response = await webBrowser.UrlGetToJsonObject<MeowResponse>(request).ConfigureAwait(false);
 
-			if (response?.Content == null) {
+			if (response == null) {
 				return null;
 			}
 
@@ -51,6 +53,7 @@ namespace ArchiSteamFarm.CustomPlugins.ExamplePlugin {
 			return Uri.EscapeUriString(response.Content!.Link!);
 		}
 
+#pragma warning disable CA1812 // False positive, the class is used during json deserialization
 		[SuppressMessage("ReSharper", "ClassCannotBeInstantiated")]
 		private sealed class MeowResponse {
 			[JsonProperty(PropertyName = "file", Required = Required.Always)]
@@ -59,5 +62,6 @@ namespace ArchiSteamFarm.CustomPlugins.ExamplePlugin {
 			[JsonConstructor]
 			private MeowResponse() { }
 		}
+#pragma warning restore CA1812 // False positive, the class is used during json deserialization
 	}
 }

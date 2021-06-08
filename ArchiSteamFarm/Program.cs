@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,10 +27,17 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Resources;
+using System.Text;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Core;
+using ArchiSteamFarm.Helpers;
 using ArchiSteamFarm.IPC;
 using ArchiSteamFarm.Localization;
 using ArchiSteamFarm.NLog;
+using ArchiSteamFarm.NLog.Targets;
+using ArchiSteamFarm.Steam;
+using ArchiSteamFarm.Storage;
+using ArchiSteamFarm.Web;
 using Newtonsoft.Json;
 using NLog;
 using NLog.Targets;
@@ -38,6 +45,8 @@ using SteamKit2;
 
 namespace ArchiSteamFarm {
 	internal static class Program {
+		internal static bool ConfigMigrate { get; private set; } = true;
+		internal static bool ConfigWatch { get; private set; } = true;
 		internal static string? NetworkGroup { get; private set; }
 		internal static bool ProcessRequired { get; private set; }
 		internal static bool RestartAllowed { get; private set; } = true;
@@ -116,7 +125,10 @@ namespace ArchiSteamFarm {
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
-			// We must register our logging targets as soon as possible
+			// Add support for custom encodings
+			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+			// Add support for custom logging targets
 			Target.Register<HistoryTarget>(HistoryTarget.TargetName);
 			Target.Register<SteamTarget>(SteamTarget.TargetName);
 
@@ -212,10 +224,12 @@ namespace ArchiSteamFarm {
 				throw new ArgumentNullException(nameof(globalConfigFile));
 			}
 
+			string? latestJson = null;
+
 			GlobalConfig? globalConfig;
 
 			if (File.Exists(globalConfigFile)) {
-				globalConfig = await GlobalConfig.Load(globalConfigFile).ConfigureAwait(false);
+				(globalConfig, latestJson) = await GlobalConfig.Load(globalConfigFile).ConfigureAwait(false);
 
 				if (globalConfig == null) {
 					ASF.ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorGlobalConfigNotLoaded, globalConfigFile));
@@ -227,28 +241,46 @@ namespace ArchiSteamFarm {
 				globalConfig = new GlobalConfig();
 			}
 
-			ASF.InitGlobalConfig(globalConfig);
-
-			if (Debugging.IsDebugConfigured) {
-				ASF.ArchiLogger.LogGenericDebug(globalConfigFile + ": " + JsonConvert.SerializeObject(ASF.GlobalConfig, Formatting.Indented));
+			if (globalConfig.Debug) {
+				ASF.ArchiLogger.LogGenericDebug(globalConfigFile + ": " + JsonConvert.SerializeObject(globalConfig, Formatting.Indented));
 			}
 
-			if (!string.IsNullOrEmpty(ASF.GlobalConfig?.CurrentCulture)) {
+			if (!string.IsNullOrEmpty(globalConfig.CurrentCulture)) {
 				try {
 					// GetCultureInfo() would be better but we can't use it for specifying neutral cultures such as "en"
-					CultureInfo culture = CultureInfo.CreateSpecificCulture(ASF.GlobalConfig!.CurrentCulture!);
+					CultureInfo culture = CultureInfo.CreateSpecificCulture(globalConfig.CurrentCulture!);
 					CultureInfo.DefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentUICulture = culture;
 				} catch (Exception e) {
 					ASF.ArchiLogger.LogGenericWarningException(e);
 
 					ASF.ArchiLogger.LogGenericError(Strings.ErrorInvalidCurrentCulture);
 				}
+			} else {
+				// April Fools easter egg
+				DateTime now = DateTime.Now;
+
+				if ((now.Month == 4) && (now.Day == 1)) {
+					try {
+						CultureInfo.DefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.CreateSpecificCulture("qps-Ploc");
+					} catch (Exception e) {
+						ASF.ArchiLogger.LogGenericDebuggingException(e);
+					}
+				}
 			}
+
+			if (!string.IsNullOrEmpty(latestJson)) {
+				ASF.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.AutomaticFileMigration, globalConfigFile));
+				await SerializableFile.Write(globalConfigFile, latestJson!).ConfigureAwait(false);
+				ASF.ArchiLogger.LogGenericInfo(Strings.Done);
+			}
+
+			await ASF.InitGlobalConfig(globalConfig).ConfigureAwait(false);
 
 			// Skip translation progress for English and invariant (such as "C") cultures
 			switch (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName) {
 				case "en":
 				case "iv":
+				case "qps":
 					return true;
 			}
 
@@ -470,6 +502,14 @@ namespace ArchiSteamFarm {
 						break;
 					case "--network-group" when !cryptKeyNext && !networkGroupNext && !pathNext:
 						networkGroupNext = true;
+
+						break;
+					case "--no-config-migrate" when !cryptKeyNext && !networkGroupNext && !pathNext:
+						ConfigMigrate = false;
+
+						break;
+					case "--no-config-watch" when !cryptKeyNext && !networkGroupNext && !pathNext:
+						ConfigWatch = false;
 
 						break;
 					case "--no-restart" when !cryptKeyNext && !networkGroupNext && !pathNext:

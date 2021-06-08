@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,34 +22,32 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
+using ArchiSteamFarm.Core;
 using Newtonsoft.Json;
 using SteamKit2;
 
 namespace ArchiSteamFarm.OfficialPlugins.SteamTokenDumper {
 	internal sealed class RequestData {
+		[JsonProperty(PropertyName = "guid", Required = Required.Always)]
+		private static string Guid => ASF.GlobalDatabase?.Identifier.ToString("N") ?? throw new InvalidOperationException(nameof(ASF.GlobalDatabase.Identifier));
+
+		[JsonProperty(PropertyName = "token", Required = Required.Always)]
+		private static string Token => SharedInfo.Token;
+
+		[JsonProperty(PropertyName = "v", Required = Required.Always)]
+		private static byte Version => SharedInfo.ApiVersion;
+
 		[JsonProperty(PropertyName = "apps", Required = Required.Always)]
 		private readonly ImmutableDictionary<string, string> Apps;
 
 		[JsonProperty(PropertyName = "depots", Required = Required.Always)]
 		private readonly ImmutableDictionary<string, string> Depots;
 
-		[JsonProperty(PropertyName = "guid", Required = Required.Always)]
-		private readonly string Guid = ASF.GlobalDatabase?.Identifier.ToString("N") ?? throw new InvalidOperationException(nameof(ASF.GlobalDatabase.Identifier));
-
 		private readonly ulong SteamID;
 
 		[JsonProperty(PropertyName = "subs", Required = Required.Always)]
 		private readonly ImmutableDictionary<string, string> Subs;
-
-#pragma warning disable CS0414
-		[JsonProperty(PropertyName = "token", Required = Required.Always)]
-		private readonly string Token = SharedInfo.Token;
-#pragma warning restore CS0414
-
-#pragma warning disable CS0414
-		[JsonProperty(PropertyName = "v", Required = Required.Always)]
-		private readonly byte Version = SharedInfo.ApiVersion;
-#pragma warning restore CS0414
 
 		[JsonProperty(PropertyName = "steamid", Required = Required.Always)]
 		private string SteamIDText => new SteamID(SteamID).Render();
@@ -73,9 +71,9 @@ namespace ArchiSteamFarm.OfficialPlugins.SteamTokenDumper {
 
 			SteamID = steamID;
 
-			Apps = apps.ToImmutableDictionary(app => app.Key.ToString(), app => app.Value.ToString());
-			Subs = accessTokens.ToImmutableDictionary(package => package.Key.ToString(), package => package.Value.ToString());
-			Depots = depots.ToImmutableDictionary(depot => depot.Key.ToString(), depot => depot.Value);
+			Apps = apps.ToImmutableDictionary(app => app.Key.ToString(CultureInfo.InvariantCulture), app => app.Value.ToString(CultureInfo.InvariantCulture));
+			Subs = accessTokens.ToImmutableDictionary(package => package.Key.ToString(CultureInfo.InvariantCulture), package => package.Value.ToString(CultureInfo.InvariantCulture));
+			Depots = depots.ToImmutableDictionary(depot => depot.Key.ToString(CultureInfo.InvariantCulture), depot => depot.Value);
 		}
 	}
 }

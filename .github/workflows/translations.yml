@@ -2,15 +2,11 @@ name: ASF-translations
 
 on:
   schedule:
-  - cron: '0 2 * * *'
+  - cron: '55 1 * * *'
 
 jobs:
   update:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
@@ -29,17 +25,24 @@ jobs:
         git reset --hard origin/master
 
     - name: Download latest translations from Crowdin
-      uses: crowdin/github-action@1.0.9
+      uses: crowdin/github-action@1.1.0
       with:
         upload_sources: false
         download_translations: true
         skip_untranslated_strings: true
         push_translations: false
-        crowdin_branch_name: master
+        crowdin_branch_name: main
+        config: '.github/crowdin.yml'
         project_id: ${{ secrets.ASF_CROWDIN_PROJECT_ID }}
         token: ${{ secrets.ASF_CROWDIN_API_TOKEN }}
-      env:
-        GITHUB_TOKEN: 'not-used' # TODO: https://github.com/crowdin/github-action/pull/30
+
+    - name: Import GPG key for wiki
+      uses: crazy-max/ghaction-import-gpg@v3
+      with:
+        gpg-private-key: ${{ secrets.ARCHIBOT_GPG_PRIVATE_KEY }}
+        git-user-signingkey: true
+        git-commit-gpgsign: true
+        workdir: wiki
 
     - name: Commit the changes to wiki
       shell: sh
@@ -47,9 +50,6 @@ jobs:
         set -eu
 
         cd wiki
-
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
 
         git add -A "locale"
 
@@ -60,19 +60,24 @@ jobs:
     - name: Push changes to wiki
       uses: ad-m/github-push-action@master
       with:
-        directory: wiki
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: master
+        directory: wiki
         repository: ${{ github.repository }}.wiki
+
+    - name: Import GPG key for ASF
+      uses: crazy-max/ghaction-import-gpg@v3
+      with:
+        gpg-private-key: ${{ secrets.ARCHIBOT_GPG_PRIVATE_KEY }}
+        git-user-signingkey: true
+        git-commit-gpgsign: true
 
     - name: Commit the changes to ASF
       shell: sh
       run: |
         set -eu
 
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-
-        git add -A "ArchiSteamFarm/Localization" "wiki"
+        git add -A "ArchiSteamFarm/Localization" "ArchiSteamFarm.OfficialPlugins.SteamTokenDumper/Localization" "wiki"
 
         if ! git diff --cached --quiet; then
             git commit -m "Automatic translations update"
@@ -82,3 +87,4 @@ jobs:
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}

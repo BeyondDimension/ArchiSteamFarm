@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
+using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Localization;
+using ArchiSteamFarm.Steam.Security;
 using Newtonsoft.Json;
 
 namespace ArchiSteamFarm.IPC.Requests {
@@ -46,13 +49,14 @@ namespace ArchiSteamFarm.IPC.Requests {
 		///     Specifies the type of confirmations to handle. If not provided, all confirmation types are considered for an action.
 		/// </summary>
 		[JsonProperty]
-		public MobileAuthenticator.Confirmation.EType? AcceptedType { get; private set; }
+		public Confirmation.EType? AcceptedType { get; private set; }
 
 		/// <summary>
 		///     A helper property which works the same as <see cref="AcceptedCreatorIDs" /> but with values written as strings - for javascript compatibility purposes. Use either this one, or <see cref="AcceptedCreatorIDs" />, not both.
 		/// </summary>
 		[JsonProperty(PropertyName = SharedInfo.UlongCompatibilityStringPrefix + nameof(AcceptedCreatorIDs), Required = Required.DisallowNull)]
 		public ImmutableHashSet<string> SAcceptedCreatorIDs {
+			get => AcceptedCreatorIDs.Select(creatorID => creatorID.ToString(CultureInfo.InvariantCulture)).ToImmutableHashSet();
 			set {
 				if (value == null) {
 					throw new ArgumentNullException(nameof(value));

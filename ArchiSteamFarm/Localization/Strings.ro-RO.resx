@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -131,7 +131,7 @@
     <comment>{0} will be replaced by content string. Please note that this string should include newline for formatting.</comment>
   </data>
   <data name="ErrorConfigPropertyInvalid" xml:space="preserve">
-    <value>Proprietatea {0} a fost configurată cu o valoare invalidă: {1}</value>
+    <value>Proprietatea {0} configurată este invalidă: {1}</value>
     <comment>{0} will be replaced by name of the configuration property, {1} will be replaced by invalid value</comment>
   </data>
   <data name="ErrorEarlyFatalExceptionInfo" xml:space="preserve">
@@ -456,7 +456,7 @@ StackTrace:
     <value>Oferta de schimb a fost trimisă cu succes!</value>
   </data>
   <data name="BotSendingTradeToYourself" xml:space="preserve">
-    <value>Nu poți să îți trimiți ție un schimb!</value>
+    <value>Nu te poti invita singur!</value>
   </data>
   <data name="BotNoASFAuthenticator" xml:space="preserve">
     <value>Acest bot nu are ASF 2FA activat! Ai uitat să imporți autentificatorul ca ASF 2FA?</value>
@@ -472,6 +472,7 @@ StackTrace:
     <value>Deținute deja: {0} | {1}</value>
     <comment>{0} will be replaced by game's ID (number), {1} will be replaced by game's name</comment>
   </data>
+  
   <data name="BotRateLimitExceeded" xml:space="preserve">
     <value>Limita ratei depășită, vom reîncerca după {0} de așteptare...</value>
     <comment>{0} will be replaced by translated TimeSpan string (such as "25 minutes")</comment>
@@ -696,10 +697,6 @@ Proces: {1}</value>
     <value>Consola interactivă nu este disponibilă deoarece lipsesc {0} din configurare.</value>
     <comment>{0} will be replaced by the name of the missing config property (string)</comment>
   </data>
-  <data name="Response" xml:space="preserve">
-    <value>Răspuns: {0}</value>
-    <comment>{0} will be replaced by the generated response (string)</comment>
-  </data>
   <data name="BotGamesToRedeemInBackgroundCount" xml:space="preserve">
     <value>Botul are {0} jocuri rămase la rând în fundal.</value>
     <comment>{0} will be replaced by remaining number of games in BGR's queue</comment>
@@ -741,8 +738,14 @@ Proces: {1}</value>
   </data>
   <data name="WarningUnknownCommandLineArgument" xml:space="preserve">
     <value>Argument necunoscut de comandă-linie: {0}</value>
+    <comment>{0} will be replaced by unrecognized command that has been provided</comment>
   </data>
-<data name="ErrorConfigDirectoryNotFound" xml:space="preserve">
+  <data name="ErrorConfigDirectoryNotFound" xml:space="preserve">
     <value>Directorul de configurații nu a putut fi găsit, abandonare!</value>
-</data>
+  </data>
+  <data name="BotIdlingSelectedGames" xml:space="preserve">
+    <value>Farmare selectată {0}: {1}</value>
+    <comment>{0} will be replaced by internal name of the config property (e.g. "GamesPlayedWhileIdle"), {1} will be replaced by comma-separated list of appIDs that user has chosen</comment>
+  </data>
+  
 </root>

@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,41 +49,6 @@ namespace ArchiSteamFarm.IPC.Responses {
 		internal TypeResponse([NotNull] Dictionary<string, string> body, [NotNull] TypeProperties properties) {
 			Body = body ?? throw new ArgumentNullException(nameof(body));
 			Properties = properties ?? throw new ArgumentNullException(nameof(properties));
-		}
-
-		public sealed class TypeProperties {
-			/// <summary>
-			///     Base type of given type, if available.
-			/// </summary>
-			/// <remarks>
-			///     This can be used for determining how <see cref="Body" /> should be interpreted.
-			/// </remarks>
-			[JsonProperty]
-			public string? BaseType { get; private set; }
-
-			/// <summary>
-			///     Custom attributes of given type, if available.
-			/// </summary>
-			/// <remarks>
-			///     This can be used for determining main enum type if <see cref="BaseType" /> is <see cref="Enum" />.
-			/// </remarks>
-			[JsonProperty]
-			public HashSet<string>? CustomAttributes { get; private set; }
-
-			/// <summary>
-			///     Underlying type of given type, if available.
-			/// </summary>
-			/// <remarks>
-			///     This can be used for determining underlying enum type if <see cref="BaseType" /> is <see cref="Enum" />.
-			/// </remarks>
-			[JsonProperty]
-			public string? UnderlyingType { get; private set; }
-
-			internal TypeProperties(string? baseType = null, HashSet<string>? customAttributes = null, string? underlyingType = null) {
-				BaseType = baseType;
-				CustomAttributes = customAttributes;
-				UnderlyingType = underlyingType;
-			}
 		}
 	}
 }

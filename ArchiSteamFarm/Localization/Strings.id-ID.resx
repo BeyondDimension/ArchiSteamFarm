@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -449,9 +449,7 @@
   <data name="BotLootingSuccess" xml:space="preserve">
     <value>Trade Offer berhasil dikirim!</value>
   </data>
-  <data name="BotSendingTradeToYourself" xml:space="preserve">
-    <value>Anda tidak dapat mengirimkan pesan kepada dirisendiri!</value>
-  </data>
+  
   <data name="BotNoASFAuthenticator" xml:space="preserve">
     <value>Bot tidak memiliki ASF 2FA yang diperbolehkan! Apakah kamu lupa untuk mengimpor authenticator kamu sebagai ASF 2FA?</value>
   </data>
@@ -466,6 +464,7 @@
     <value>Yang sudah dimiliki: {0} | {1}</value>
     <comment>{0} will be replaced by game's ID (number), {1} will be replaced by game's name</comment>
   </data>
+  
   
   <data name="BotReconnecting" xml:space="preserve">
     <value>Menyambungkan kembali...</value>
@@ -557,10 +556,7 @@
   <data name="ErrorInvalidCurrentCulture" xml:space="preserve">
     <value>CurrentCulture yang anda berikan tidak valid, ASF akan tetap berjalan dengan kondisi default!</value>
   </data>
-  <data name="TranslationIncomplete" xml:space="preserve">
-    <value>ASF akan mencoba untuk menggunakan bahasa {0} pilihan Anda, tetapi terjemahan dalam bahasa tersebut baru {1}. Mungkin Anda bisa membantu ASF untuk melengkapi terjemahan ke dalam bahasa Anda?</value>
-    <comment>{0} will be replaced by culture code, such as "en-US", {1} will be replaced by completeness percentage, such as "78.5%"</comment>
-  </data>
+  
   <data name="IdlingGameNotPossible" xml:space="preserve">
     <value>Pengidle-an {0} ({1}) sementara dinonaktifkan, karena ASF tidak mampu memainkan permainan itu pada saat ini.</value>
     <comment>{0} will be replaced by game's ID (number), {1} will be replaced by game's name</comment>
@@ -589,9 +585,7 @@
   <data name="ErrorAccessDenied" xml:space="preserve">
     <value>Akses ditolak!</value>
   </data>
-  <data name="WarningPreReleaseVersion" xml:space="preserve">
-    <value>Anda menggunakan versi yang lebih baru daripada versi terbaru yang dirilis untuk saluran pembaruan Anda. Harap dicatat bahwa pra-rilis diperuntukkan untuk pengguna yang tahu bagaimana untuk melaporkan bug, berurusan dengan isu-isu dan memberikan umpan balik - tidak akan ada pemberian dukungan teknis.</value>
-  </data>
+  
   
   <data name="ClearingDiscoveryQueue" xml:space="preserve">
     <value>Membersihkan antrian penemuan Steam #{0}...</value>
@@ -656,10 +650,6 @@
   </data>
   
   
-  <data name="Response" xml:space="preserve">
-    <value>Respon: {0}</value>
-    <comment>{0} will be replaced by the generated response (string)</comment>
-  </data>
   <data name="BotGamesToRedeemInBackgroundCount" xml:space="preserve">
     <value>Bot mempunyai {0} game tersisa di dalam antrian.</value>
     <comment>{0} will be replaced by remaining number of games in BGR's queue</comment>
@@ -675,5 +665,7 @@
   
   
   
-
+  
+  
+  
 </root>

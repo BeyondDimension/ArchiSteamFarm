@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,9 +25,13 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Compatibility;
+using ArchiSteamFarm.Core;
 using ArchiSteamFarm.IPC.Requests;
 using ArchiSteamFarm.IPC.Responses;
 using ArchiSteamFarm.Localization;
+using ArchiSteamFarm.Steam.Interaction;
+using ArchiSteamFarm.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 
@@ -67,7 +71,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 
 			uint memoryUsage = (uint) GC.GetTotalMemory(false) / 1024;
 
-			ASFResponse result = new(SharedInfo.BuildInfo.Variant, SharedInfo.BuildInfo.CanUpdate, ASF.GlobalConfig, memoryUsage, RuntimeCompatibility.ProcessStartTime, SharedInfo.Version);
+			ASFResponse result = new(SharedInfo.BuildInfo.Variant, SharedInfo.BuildInfo.CanUpdate, ASF.GlobalConfig, memoryUsage, StaticHelpers.ProcessStartTime, SharedInfo.Version);
 
 			return Ok(new GenericResponse<ASFResponse>(result));
 		}
@@ -115,15 +119,13 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 				return BadRequest(new GenericResponse(false, errorMessage));
 			}
 
-			request.GlobalConfig.ShouldSerializeDefaultValues = false;
-			request.GlobalConfig.ShouldSerializeHelperProperties = false;
-			request.GlobalConfig.ShouldSerializeSensitiveDetails = true;
+			request.GlobalConfig.Saving = true;
 
 			if (!request.GlobalConfig.IsWebProxyPasswordSet && ASF.GlobalConfig.IsWebProxyPasswordSet) {
 				request.GlobalConfig.WebProxyPassword = ASF.GlobalConfig.WebProxyPassword;
 			}
 
-			if ((ASF.GlobalConfig.AdditionalProperties != null) && (ASF.GlobalConfig.AdditionalProperties.Count > 0)) {
+			if (ASF.GlobalConfig.AdditionalProperties is { Count: > 0 }) {
 				request.GlobalConfig.AdditionalProperties ??= new Dictionary<string, JToken>(ASF.GlobalConfig.AdditionalProperties.Count, ASF.GlobalConfig.AdditionalProperties.Comparer);
 
 				foreach ((string key, JToken value) in ASF.GlobalConfig.AdditionalProperties.Where(property => !request.GlobalConfig.AdditionalProperties.ContainsKey(property.Key))) {

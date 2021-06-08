@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,7 @@
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Core;
 using ArchiSteamFarm.IPC.Controllers.Api;
 using ArchiSteamFarm.IPC.Responses;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +41,7 @@ namespace ArchiSteamFarm.CustomPlugins.ExamplePlugin {
 		[ProducesResponseType(typeof(GenericResponse), (int) HttpStatusCode.ServiceUnavailable)]
 		public async Task<ActionResult<GenericResponse>> CatGet() {
 			if (ASF.WebBrowser == null) {
-				throw new ArgumentNullException(nameof(ASF.WebBrowser));
+				throw new InvalidOperationException(nameof(ASF.WebBrowser));
 			}
 
 			string? link = await CatAPI.GetRandomCatURL(ASF.WebBrowser).ConfigureAwait(false);

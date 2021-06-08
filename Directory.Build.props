@@ -1,17 +1,20 @@
 <Project>
   <PropertyGroup>
-    <Version>5.0.1.2</Version>
+    <Version>5.1.1.0</Version>
   </PropertyGroup>
 
   <PropertyGroup>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <ApplicationIcon>../resources/ASF.ico</ApplicationIcon>
     <Authors>JustArchi</Authors>
     <Company>JustArchiNET</Company>
-    <Copyright>Copyright © ArchiSteamFarm 2015-2020</Copyright>
+    <Copyright>Copyright © ArchiSteamFarm 2015-2021</Copyright>
     <Description>ASF is a C# application with primary purpose of idling Steam cards from multiple accounts simultaneously.</Description>
     <Deterministic>true</Deterministic>
     <ErrorReport>none</ErrorReport>
     <LangVersion>latest</LangVersion>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <NeutralLanguage>en</NeutralLanguage>
     <NoWarn>1591</NoWarn>
     <Nullable>enable</Nullable>
     <PackageIcon>../resources/ASF.ico</PackageIcon>

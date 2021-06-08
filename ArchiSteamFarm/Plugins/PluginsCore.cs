@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,14 +30,20 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using ArchiSteamFarm.Json;
+using ArchiSteamFarm.Core;
+using ArchiSteamFarm.Helpers;
 using ArchiSteamFarm.Localization;
+using ArchiSteamFarm.Plugins.Interfaces;
+using ArchiSteamFarm.Steam;
+using ArchiSteamFarm.Steam.Data;
+using ArchiSteamFarm.Steam.Exchange;
+using ArchiSteamFarm.Steam.Integration.Callbacks;
 using Newtonsoft.Json.Linq;
 using SteamKit2;
 
 namespace ArchiSteamFarm.Plugins {
 	internal static class PluginsCore {
-		internal static bool HasCustomPluginsLoaded => ActivePlugins?.Any(plugin => !(plugin is OfficialPlugin officialPlugin) || !officialPlugin.HasSameVersion()) == true;
+		internal static bool HasCustomPluginsLoaded => ActivePlugins?.Any(plugin => plugin is not OfficialPlugin officialPlugin || !officialPlugin.HasSameVersion()) == true;
 
 		[ImportMany]
 		internal static ImmutableHashSet<IPlugin>? ActivePlugins { get; private set; }
@@ -63,8 +69,10 @@ namespace ArchiSteamFarm.Plugins {
 		}
 
 		internal static async Task<uint> GetChangeNumberToStartFrom() {
-			if (ActivePlugins == null) {
-				return 0;
+			uint lastChangeNumber = ASF.GlobalDatabase?.LastChangeNumber ?? 0;
+
+			if ((lastChangeNumber == 0) || (ActivePlugins == null)) {
+				return lastChangeNumber;
 			}
 
 			IList<uint> results;
@@ -74,16 +82,38 @@ namespace ArchiSteamFarm.Plugins {
 			} catch (Exception e) {
 				ASF.ArchiLogger.LogGenericException(e);
 
-				return 0;
+				return lastChangeNumber;
 			}
 
-			uint changeNumberToStartFrom = uint.MaxValue;
-
-			foreach (uint result in results.Where(result => (result > 0) && (result < changeNumberToStartFrom))) {
-				changeNumberToStartFrom = result;
+			foreach (uint result in results.Where(result => (result > 0) && (result < lastChangeNumber))) {
+				lastChangeNumber = result;
 			}
 
-			return changeNumberToStartFrom == uint.MaxValue ? 0 : changeNumberToStartFrom;
+			return lastChangeNumber;
+		}
+
+		internal static async Task<ICrossProcessSemaphore> GetCrossProcessSemaphore(string objectName) {
+			if (string.IsNullOrEmpty(objectName)) {
+				throw new ArgumentNullException(nameof(objectName));
+			}
+
+			string resourceName = OS.GetOsResourceName(objectName);
+
+			if ((ActivePlugins == null) || (ActivePlugins.Count == 0)) {
+				return new CrossProcessFileBasedSemaphore(resourceName);
+			}
+
+			IList<ICrossProcessSemaphore?> responses;
+
+			try {
+				responses = await Utilities.InParallel(ActivePlugins.OfType<ICrossProcessSemaphoreProvider>().Select(plugin => plugin.GetCrossProcessSemaphore(resourceName))).ConfigureAwait(false);
+			} catch (Exception e) {
+				ASF.ArchiLogger.LogGenericException(e);
+
+				return new CrossProcessFileBasedSemaphore(resourceName);
+			}
+
+			return responses.FirstOrDefault(response => response != null) ?? new CrossProcessFileBasedSemaphore(resourceName);
 		}
 
 		internal static bool InitPlugins() {
@@ -102,7 +132,9 @@ namespace ArchiSteamFarm.Plugins {
 			ASF.ArchiLogger.LogGenericInfo(string.Format(CultureInfo.CurrentCulture, Strings.Initializing, nameof(Plugins)));
 
 			foreach (Assembly assembly in assemblies) {
-				ASF.ArchiLogger.LogGenericDebug(string.Format(CultureInfo.CurrentCulture, Strings.Initializing, assembly.FullName));
+				if (Debugging.IsUserDebugging) {
+					ASF.ArchiLogger.LogGenericDebug(string.Format(CultureInfo.CurrentCulture, Strings.Initializing, assembly.FullName));
+				}
 
 				try {
 					// This call is bare minimum to verify if the assembly can load itself
@@ -473,7 +505,7 @@ namespace ArchiSteamFarm.Plugins {
 			return responses.Where(response => response != null).SelectMany(handlers => handlers ?? Enumerable.Empty<ClientMsgHandler>()).ToHashSet();
 		}
 
-		internal static async Task<bool> OnBotTradeOffer(Bot bot, Steam.TradeOffer tradeOffer) {
+		internal static async Task<bool> OnBotTradeOffer(Bot bot, TradeOffer tradeOffer) {
 			if (bot == null) {
 				throw new ArgumentNullException(nameof(bot));
 			}
@@ -499,7 +531,7 @@ namespace ArchiSteamFarm.Plugins {
 			return responses.Any(response => response);
 		}
 
-		internal static async Task OnBotTradeOfferResults(Bot bot, IReadOnlyCollection<Trading.ParseTradeResult> tradeResults) {
+		internal static async Task OnBotTradeOfferResults(Bot bot, IReadOnlyCollection<ParseTradeResult> tradeResults) {
 			if (bot == null) {
 				throw new ArgumentNullException(nameof(bot));
 			}
@@ -519,7 +551,7 @@ namespace ArchiSteamFarm.Plugins {
 			}
 		}
 
-		internal static async Task OnBotUserNotifications(Bot bot, IReadOnlyCollection<ArchiHandler.UserNotificationsCallback.EUserNotification> newNotifications) {
+		internal static async Task OnBotUserNotifications(Bot bot, IReadOnlyCollection<UserNotificationsCallback.EUserNotification> newNotifications) {
 			if (bot == null) {
 				throw new ArgumentNullException(nameof(bot));
 			}

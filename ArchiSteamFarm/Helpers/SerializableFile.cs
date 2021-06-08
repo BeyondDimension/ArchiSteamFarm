@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,13 +20,16 @@
 // limitations under the License.
 
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Compatibility;
+using ArchiSteamFarm.Core;
 using Newtonsoft.Json;
 
 namespace ArchiSteamFarm.Helpers {
 	public abstract class SerializableFile : IDisposable {
+		private static readonly SemaphoreSlim GlobalFileSemaphore = new(1, 1);
+
 		private readonly SemaphoreSlim FileSemaphore = new(1, 1);
 
 		protected string? FilePath { get; set; }
@@ -34,10 +37,15 @@ namespace ArchiSteamFarm.Helpers {
 		private bool ReadOnly;
 		private bool SavingScheduled;
 
-		public virtual void Dispose() {
-			FileSemaphore.Dispose();
-
+		public void Dispose() {
+			Dispose(true);
 			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing) {
+			if (disposing) {
+				FileSemaphore.Dispose();
+			}
 		}
 
 		protected async Task Save() {
@@ -71,20 +79,26 @@ namespace ArchiSteamFarm.Helpers {
 				string json = JsonConvert.SerializeObject(this, Debugging.IsUserDebugging ? Formatting.Indented : Formatting.None);
 
 				if (string.IsNullOrEmpty(json)) {
-					ASF.ArchiLogger.LogNullError(nameof(json));
-
-					return;
+					throw new InvalidOperationException(nameof(json));
 				}
 
+				// We always want to write entire content to temporary file first, in order to never load corrupted data, also when target file doesn't exist
 				string newFilePath = FilePath + ".new";
 
-				// We always want to write entire content to temporary file first, in order to never load corrupted data, also when target file doesn't exist
-				await RuntimeCompatibility.File.WriteAllTextAsync(newFilePath, json).ConfigureAwait(false);
+				if (System.IO.File.Exists(FilePath)) {
+					string currentJson = await File.ReadAllTextAsync(FilePath!).ConfigureAwait(false);
 
-				if (File.Exists(FilePath)) {
-					File.Replace(newFilePath, FilePath!, null);
+					if (json == currentJson) {
+						return;
+					}
+
+					await File.WriteAllTextAsync(newFilePath, json).ConfigureAwait(false);
+
+					System.IO.File.Replace(newFilePath, FilePath, null);
 				} else {
-					File.Move(newFilePath, FilePath!);
+					await File.WriteAllTextAsync(newFilePath, json).ConfigureAwait(false);
+
+					System.IO.File.Move(newFilePath, FilePath);
 				}
 			} catch (Exception e) {
 				ASF.ArchiLogger.LogGenericException(e);
@@ -108,6 +122,47 @@ namespace ArchiSteamFarm.Helpers {
 				ReadOnly = true;
 			} finally {
 				FileSemaphore.Release();
+			}
+		}
+
+		internal static async Task<bool> Write(string filePath, string json) {
+			if (string.IsNullOrEmpty(filePath)) {
+				throw new ArgumentNullException(nameof(filePath));
+			}
+
+			if (string.IsNullOrEmpty(json)) {
+				throw new ArgumentNullException(nameof(json));
+			}
+
+			string newFilePath = filePath + ".new";
+
+			await GlobalFileSemaphore.WaitAsync().ConfigureAwait(false);
+
+			try {
+				// We always want to write entire content to temporary file first, in order to never load corrupted data, also when target file doesn't exist
+				if (System.IO.File.Exists(filePath)) {
+					string currentJson = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
+
+					if (json == currentJson) {
+						return true;
+					}
+
+					await File.WriteAllTextAsync(newFilePath, json).ConfigureAwait(false);
+
+					System.IO.File.Replace(newFilePath, filePath, null);
+				} else {
+					await File.WriteAllTextAsync(newFilePath, json).ConfigureAwait(false);
+
+					System.IO.File.Move(newFilePath, filePath);
+				}
+
+				return true;
+			} catch (Exception e) {
+				ASF.ArchiLogger.LogGenericException(e);
+
+				return false;
+			} finally {
+				GlobalFileSemaphore.Release();
 			}
 		}
 	}

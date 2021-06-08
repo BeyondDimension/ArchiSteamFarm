@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,8 +28,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ArchiSteamFarm.Collections;
+using ArchiSteamFarm.Core;
 using ArchiSteamFarm.IPC;
 using ArchiSteamFarm.Localization;
+using ArchiSteamFarm.NLog.Targets;
+using ArchiSteamFarm.Steam;
+using ArchiSteamFarm.Storage;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -44,6 +48,8 @@ namespace ArchiSteamFarm.NLog {
 
 		private static readonly ConcurrentHashSet<LoggingRule> ConsoleLoggingRules = new();
 		private static readonly SemaphoreSlim ConsoleSemaphore = new(1, 1);
+
+		private static string Backspace => "\b \b";
 
 		private static bool IsUsingCustomConfiguration;
 		private static bool IsWaitingForUserInput;
@@ -158,7 +164,9 @@ namespace ArchiSteamFarm.NLog {
 			ConfigurationItemFactory.Default.ParseMessageTemplates = false;
 			LoggingConfiguration config = new();
 
+#pragma warning disable CA2000 // False positive, we're adding this disposable object to the global scope, so we can't dispose it
 			ColoredConsoleTarget coloredConsoleTarget = new("ColoredConsole") { Layout = GeneralLayout };
+#pragma warning restore CA2000 // False positive, we're adding this disposable object to the global scope, so we can't dispose it
 
 			config.AddTarget(coloredConsoleTarget);
 			config.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, coloredConsoleTarget));
@@ -172,6 +180,7 @@ namespace ArchiSteamFarm.NLog {
 					ASF.ArchiLogger.LogGenericException(e);
 				}
 
+#pragma warning disable CA2000 // False positive, we're adding this disposable object to the global scope, so we can't dispose it
 				FileTarget fileTarget = new("File") {
 					ArchiveFileName = Path.Combine("${currentdir}", SharedInfo.ArchivalLogsDirectory, SharedInfo.ArchivalLogFile),
 					ArchiveNumbering = ArchiveNumberingMode.Rolling,
@@ -183,6 +192,7 @@ namespace ArchiSteamFarm.NLog {
 					Layout = GeneralLayout,
 					MaxArchiveFiles = 10
 				};
+#pragma warning restore CA2000 // False positive, we're adding this disposable object to the global scope, so we can't dispose it
 
 				config.AddTarget(fileTarget);
 				config.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, fileTarget));
@@ -279,8 +289,7 @@ namespace ArchiSteamFarm.NLog {
 							Console.Write(' ');
 							Console.SetCursorPosition(Console.BufferWidth - 1, Console.CursorTop - 1);
 						} else {
-							// There are two \b characters here
-							Console.Write(@" ");
+							Console.Write(Backspace);
 						}
 					}
 				}
@@ -371,7 +380,7 @@ namespace ArchiSteamFarm.NLog {
 		private static void InitConsoleLoggers() {
 			ConsoleLoggingRules.Clear();
 
-			foreach (LoggingRule loggingRule in LogManager.Configuration.LoggingRules.Where(loggingRule => loggingRule.Targets.Any(target => target is ColoredConsoleTarget || target is ConsoleTarget))) {
+			foreach (LoggingRule loggingRule in LogManager.Configuration.LoggingRules.Where(loggingRule => loggingRule.Targets.Any(target => target is ColoredConsoleTarget or ConsoleTarget))) {
 				ConsoleLoggingRules.Add(loggingRule);
 			}
 		}

@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,12 +21,14 @@
 
 using System.Net;
 using ArchiSteamFarm.IPC.Responses;
+using ArchiSteamFarm.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace ArchiSteamFarm.IPC.Controllers.Api {
 	[ApiController]
 	[Produces("application/json")]
+	[Route("Api")]
 	[SwaggerResponse((int) HttpStatusCode.BadRequest, "The request has failed, check " + nameof(GenericResponse.Message) + " from response body for actual reason. Most of the time this is ASF, understanding the request, but refusing to execute it due to provided reason.", typeof(GenericResponse))]
 	[SwaggerResponse((int) HttpStatusCode.Unauthorized, "ASF has " + nameof(GlobalConfig.IPCPassword) + " set, but you've failed to authenticate. See " + SharedInfo.ProjectURL + "/wiki/IPC#authentication.")]
 	[SwaggerResponse((int) HttpStatusCode.Forbidden, "ASF has " + nameof(GlobalConfig.IPCPassword) + " set and you've failed to authenticate too many times, try again in an hour. See " + SharedInfo.ProjectURL + "/wiki/IPC#authentication.")]

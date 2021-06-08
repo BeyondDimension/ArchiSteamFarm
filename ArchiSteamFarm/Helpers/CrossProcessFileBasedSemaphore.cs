@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +26,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Threading;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Core;
 
 namespace ArchiSteamFarm.Helpers {
 	internal sealed class CrossProcessFileBasedSemaphore : ICrossProcessSemaphore, IDisposable {
@@ -179,7 +180,9 @@ namespace ArchiSteamFarm.Helpers {
 			}
 
 			try {
+#pragma warning disable CA1508 // False positive, FileStream is not null here indeed, but using clause is needed for dispose
 				using (new FileStream(FilePath, FileMode.CreateNew)) { }
+#pragma warning restore CA1508 // False positive, FileStream is not null here indeed, but using clause is needed for dispose
 
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
 					FileInfo fileInfo = new(FilePath);

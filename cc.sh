@@ -12,6 +12,7 @@ OUT="out"
 OUT_ASF="${OUT}/result"
 OUT_STD="${OUT}/${STEAM_TOKEN_DUMPER_NAME}"
 
+ANALYSIS=1
 ASF_UI=1
 CLEAN=0
 PULL=1
@@ -19,15 +20,28 @@ SHARED_COMPILATION=1
 TEST=1
 
 PRINT_USAGE() {
-	echo "Usage: $0 [--clean] [--no-asf-ui] [--no-pull] [--no-shared-compilation] [--no-test] [debug/release]"
+	echo "Usage: $0 [--clean] [--no-analysis] [--no-asf-ui] [--no-pull] [--no-shared-compilation] [--no-test] [debug/release]"
 }
 
-cd "$(dirname "$(readlink -f "$0")")"
+OS_TYPE="$(uname -s)"
+
+case "$OS_TYPE" in
+	"Darwin") SCRIPT_PATH="$(readlink "$0")" ;;
+	"FreeBSD") SCRIPT_PATH="$(readlink -f "$0")" ;;
+	"Linux") SCRIPT_PATH="$(readlink -f "$0")" ;;
+	*) echo "ERROR: Unknown OS type: ${OS_TYPE}. If you believe that our script should work on your machine, please let us know."; exit 1
+esac
+
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+
+cd "$SCRIPT_DIR"
 
 for ARG in "$@"; do
 	case "$ARG" in
 		debug|Debug) CONFIGURATION="Debug" ;;
 		release|Release) CONFIGURATION="Release" ;;
+		--analysis) ANALYSIS=1 ;;
+		--no-analysis) ANALYSIS=0 ;;
 		--asf-ui) ASF_UI=1 ;;
 		--no-asf-ui) ASF_UI=0 ;;
 		--clean) CLEAN=1 ;;
@@ -61,18 +75,18 @@ if [ ! -f "$SOLUTION" ]; then
 	exit 1
 fi
 
-os_type="$(uname -s)"
-
-case "$os_type" in
+case "$OS_TYPE" in
 	"Darwin") os_type="osx" ;;
+	"FreeBSD") os_type="freebsd" ;;
 	"Linux") os_type="linux" ;;
-	*) echo "ERROR: Unknown OS type: ${os_type}. If you believe that our script should work on your machine, please let us know."; exit 1
+	*) echo "ERROR: Unknown OS type: ${OS_TYPE}. If you believe that our script should work on your machine, please let us know."; exit 1
 esac
 
 cpu_architecture="$(uname -m)"
 
 case "$cpu_architecture" in
 	"aarch64") cpu_architecture="arm64" ;;
+	"amd64") cpu_architecture="x64" ;;
 	"armv7l") cpu_architecture="arm" ;;
 	"x86_64") cpu_architecture="x64" ;;
 	*) echo "ERROR: Unknown CPU architecture: ${cpu_architecture}. If you believe that our script should work on your machine, please let us know."; exit 1
@@ -97,7 +111,11 @@ if [ "$ASF_UI" -eq 1 ]; then
 	fi
 fi
 
-DOTNET_FLAGS="-c $CONFIGURATION -f $TARGET_FRAMEWORK -p:SelfContained=false -p:UseAppHost=false -r ${os_type}-${cpu_architecture} --nologo"
+DOTNET_FLAGS="-c $CONFIGURATION -f $TARGET_FRAMEWORK -p:ContinuousIntegrationBuild=true -p:SelfContained=false -p:UseAppHost=false -r ${os_type}-${cpu_architecture} --nologo"
+
+if [ "$ANALYSIS" -eq 0 ]; then
+	DOTNET_FLAGS="$DOTNET_FLAGS -p:AnalysisMode=AllDisabledByDefault"
+fi
 
 if [ "$SHARED_COMPILATION" -eq 0 ]; then
 	DOTNET_FLAGS="$DOTNET_FLAGS -p:UseSharedCompilation=false"
@@ -114,7 +132,7 @@ fi
 
 dotnet publish "$MAIN_PROJECT" -o "$OUT_ASF" $DOTNET_FLAGS
 
-if [ -n "${STEAM_TOKEN_DUMPER_TOKEN-}" ] && [ -f "${STEAM_TOKEN_DUMPER_NAME}/SharedInfo.cs" ]; then
+if [ -n "${STEAM_TOKEN_DUMPER_TOKEN-}" ] && [ -f "${STEAM_TOKEN_DUMPER_NAME}/SharedInfo.cs" ] && command -v git >/dev/null; then
 	git checkout -- "${STEAM_TOKEN_DUMPER_NAME}/SharedInfo.cs"
 	sed "s/STEAM_TOKEN_DUMPER_TOKEN/${STEAM_TOKEN_DUMPER_TOKEN}/g" "${STEAM_TOKEN_DUMPER_NAME}/SharedInfo.cs" > "${STEAM_TOKEN_DUMPER_NAME}/SharedInfo.cs.new";
 	mv "${STEAM_TOKEN_DUMPER_NAME}/SharedInfo.cs.new" "${STEAM_TOKEN_DUMPER_NAME}/SharedInfo.cs"
@@ -122,10 +140,11 @@ if [ -n "${STEAM_TOKEN_DUMPER_TOKEN-}" ] && [ -f "${STEAM_TOKEN_DUMPER_NAME}/Sha
 	dotnet publish "$STEAM_TOKEN_DUMPER_NAME" -o "$OUT_STD" $DOTNET_FLAGS
 	git checkout -- "${STEAM_TOKEN_DUMPER_NAME}/SharedInfo.cs"
 
+	rm -rf "${OUT_ASF}/plugins/${STEAM_TOKEN_DUMPER_NAME}"
 	mkdir -p "${OUT_ASF}/plugins/${STEAM_TOKEN_DUMPER_NAME}"
-	cp "${OUT_STD}/${STEAM_TOKEN_DUMPER_NAME}.dll" "${OUT_ASF}/plugins/${STEAM_TOKEN_DUMPER_NAME}"
+	cp -pR "${OUT_STD}/"*  "${OUT_ASF}/plugins/${STEAM_TOKEN_DUMPER_NAME}"
 else
-	echo "WARNING: STEAM_TOKEN_DUMPER_TOKEN is missing, skipping build of ${STEAM_TOKEN_DUMPER_NAME}..."
+	echo "WARNING: ${STEAM_TOKEN_DUMPER_NAME} dependencies are missing, skipping build of ${STEAM_TOKEN_DUMPER_NAME}..."
 fi
 
 echo

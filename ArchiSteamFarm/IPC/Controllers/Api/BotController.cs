@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NETFRAMEWORK
+using ArchiSteamFarm.Compatibility;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -26,9 +29,14 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Core;
 using ArchiSteamFarm.IPC.Requests;
 using ArchiSteamFarm.IPC.Responses;
 using ArchiSteamFarm.Localization;
+using ArchiSteamFarm.Steam;
+using ArchiSteamFarm.Steam.Integration.Callbacks;
+using ArchiSteamFarm.Steam.Security;
+using ArchiSteamFarm.Steam.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 
@@ -103,9 +111,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 				return BadRequest(new GenericResponse(false, errorMessage));
 			}
 
-			request.BotConfig.ShouldSerializeDefaultValues = false;
-			request.BotConfig.ShouldSerializeHelperProperties = false;
-			request.BotConfig.ShouldSerializeSensitiveDetails = true;
+			request.BotConfig.Saving = true;
 
 			HashSet<string> bots = botNames.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToHashSet(Bot.BotsComparer);
 
@@ -315,7 +321,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 		/// </remarks>
 		[Consumes("application/json")]
 		[HttpPost("{botNames:required}/Redeem")]
-		[ProducesResponseType(typeof(GenericResponse<IReadOnlyDictionary<string, IReadOnlyDictionary<string, ArchiHandler.PurchaseResponseCallback>>>), (int) HttpStatusCode.OK)]
+		[ProducesResponseType(typeof(GenericResponse<IReadOnlyDictionary<string, IReadOnlyDictionary<string, PurchaseResponseCallback>>>), (int) HttpStatusCode.OK)]
 		[ProducesResponseType(typeof(GenericResponse), (int) HttpStatusCode.BadRequest)]
 		public async Task<ActionResult<GenericResponse>> RedeemPost(string botNames, [FromBody] BotRedeemRequest request) {
 			if (string.IsNullOrEmpty(botNames)) {
@@ -336,14 +342,14 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 				return BadRequest(new GenericResponse(false, string.Format(CultureInfo.CurrentCulture, Strings.BotNotFound, botNames)));
 			}
 
-			IList<ArchiHandler.PurchaseResponseCallback?> results = await Utilities.InParallel(bots.Select(bot => request.KeysToRedeem.Select(key => bot.Actions.RedeemKey(key))).SelectMany(task => task)).ConfigureAwait(false);
+			IList<PurchaseResponseCallback?> results = await Utilities.InParallel(bots.Select(bot => request.KeysToRedeem.Select(key => bot.Actions.RedeemKey(key))).SelectMany(task => task)).ConfigureAwait(false);
 
-			Dictionary<string, IReadOnlyDictionary<string, ArchiHandler.PurchaseResponseCallback?>> result = new(bots.Count, Bot.BotsComparer);
+			Dictionary<string, IReadOnlyDictionary<string, PurchaseResponseCallback?>> result = new(bots.Count, Bot.BotsComparer);
 
 			int count = 0;
 
 			foreach (Bot bot in bots) {
-				Dictionary<string, ArchiHandler.PurchaseResponseCallback?> responses = new(request.KeysToRedeem.Count, StringComparer.Ordinal);
+				Dictionary<string, PurchaseResponseCallback?> responses = new(request.KeysToRedeem.Count, StringComparer.Ordinal);
 				result[bot.BotName] = responses;
 
 				foreach (string key in request.KeysToRedeem) {
@@ -351,7 +357,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 				}
 			}
 
-			return Ok(new GenericResponse<IReadOnlyDictionary<string, IReadOnlyDictionary<string, ArchiHandler.PurchaseResponseCallback?>>>(result.Values.SelectMany(responses => responses.Values).All(value => value != null), result));
+			return Ok(new GenericResponse<IReadOnlyDictionary<string, IReadOnlyDictionary<string, PurchaseResponseCallback?>>>(result.Values.SelectMany(responses => responses.Values).All(value => value != null), result));
 		}
 
 		/// <summary>
@@ -457,7 +463,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 		///     Handles 2FA confirmations of given bots, requires ASF 2FA module to be active on them.
 		/// </summary>
 		[HttpPost("{botNames:required}/TwoFactorAuthentication/Confirmations")]
-		[ProducesResponseType(typeof(GenericResponse<IReadOnlyDictionary<string, GenericResponse>>), (int) HttpStatusCode.OK)]
+		[ProducesResponseType(typeof(GenericResponse<IReadOnlyDictionary<string, GenericResponse<IReadOnlyCollection<Confirmation>>>>), (int) HttpStatusCode.OK)]
 		[ProducesResponseType(typeof(GenericResponse), (int) HttpStatusCode.BadRequest)]
 		public async Task<ActionResult<GenericResponse>> TwoFactorAuthenticationConfirmationsPost(string botNames, [FromBody] TwoFactorAuthenticationConfirmationsRequest request) {
 			if (string.IsNullOrEmpty(botNames)) {
@@ -468,26 +474,26 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 				throw new ArgumentNullException(nameof(request));
 			}
 
-			if (request.AcceptedType.HasValue && ((request.AcceptedType.Value == MobileAuthenticator.Confirmation.EType.Unknown) || !Enum.IsDefined(typeof(MobileAuthenticator.Confirmation.EType), request.AcceptedType.Value))) {
+			if (request.AcceptedType.HasValue && ((request.AcceptedType.Value == Confirmation.EType.Unknown) || !Enum.IsDefined(typeof(Confirmation.EType), request.AcceptedType.Value))) {
 				return BadRequest(new GenericResponse(false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(request.AcceptedType))));
 			}
 
 			HashSet<Bot>? bots = Bot.GetBots(botNames);
 
 			if ((bots == null) || (bots.Count == 0)) {
-				return BadRequest(new GenericResponse<IReadOnlyDictionary<string, GenericResponse>>(false, string.Format(CultureInfo.CurrentCulture, Strings.BotNotFound, botNames)));
+				return BadRequest(new GenericResponse<IReadOnlyDictionary<string, GenericResponse<IReadOnlyCollection<Confirmation>>>>(false, string.Format(CultureInfo.CurrentCulture, Strings.BotNotFound, botNames)));
 			}
 
-			IList<(bool Success, string Message)> results = await Utilities.InParallel(bots.Select(bot => bot.Actions.HandleTwoFactorAuthenticationConfirmations(request.Accept, request.AcceptedType, request.AcceptedCreatorIDs.Count > 0 ? request.AcceptedCreatorIDs : null, request.WaitIfNeeded))).ConfigureAwait(false);
+			IList<(bool Success, IReadOnlyCollection<Confirmation>? HandledConfirmations, string Message)> results = await Utilities.InParallel(bots.Select(bot => bot.Actions.HandleTwoFactorAuthenticationConfirmations(request.Accept, request.AcceptedType, request.AcceptedCreatorIDs.Count > 0 ? request.AcceptedCreatorIDs : null, request.WaitIfNeeded))).ConfigureAwait(false);
 
-			Dictionary<string, GenericResponse> result = new(bots.Count, Bot.BotsComparer);
+			Dictionary<string, GenericResponse<IReadOnlyCollection<Confirmation>>> result = new(bots.Count, Bot.BotsComparer);
 
 			foreach (Bot bot in bots) {
-				(bool success, string message) = results[result.Count];
-				result[bot.BotName] = new GenericResponse(success, message);
+				(bool success, IReadOnlyCollection<Confirmation>? handledConfirmations, string message) = results[result.Count];
+				result[bot.BotName] = new GenericResponse<IReadOnlyCollection<Confirmation>>(success, message, handledConfirmations);
 			}
 
-			return Ok(new GenericResponse<IReadOnlyDictionary<string, GenericResponse>>(result));
+			return Ok(new GenericResponse<IReadOnlyDictionary<string, GenericResponse<IReadOnlyCollection<Confirmation>>>>(result));
 		}
 
 		/// <summary>

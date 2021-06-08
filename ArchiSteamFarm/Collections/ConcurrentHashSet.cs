@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,6 +70,10 @@ namespace ArchiSteamFarm.Collections {
 		public void CopyTo(T[] array, int arrayIndex) => BackingCollection.Keys.CopyTo(array, arrayIndex);
 
 		public void ExceptWith(IEnumerable<T> other) {
+			if (other == null) {
+				throw new ArgumentNullException(nameof(other));
+			}
+
 			foreach (T item in other) {
 				Remove(item);
 			}
@@ -146,6 +150,10 @@ namespace ArchiSteamFarm.Collections {
 		}
 
 		public void UnionWith(IEnumerable<T> other) {
+			if (other == null) {
+				throw new ArgumentNullException(nameof(other));
+			}
+
 			foreach (T otherElement in other) {
 				Add(otherElement);
 			}

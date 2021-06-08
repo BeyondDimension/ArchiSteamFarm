@@ -4,7 +4,7 @@
 //  / ___ \ | |  | (__ | | | || | ___) || |_|  __/| (_| || | | | | ||  _|| (_| || |   | | | | | |
 // /_/   \_\|_|   \___||_| |_||_||____/  \__|\___| \__,_||_| |_| |_||_|   \__,_||_|   |_| |_| |_|
 // |
-// Copyright 2015-2020 Łukasz "JustArchi" Domeradzki
+// Copyright 2015-2021 Łukasz "JustArchi" Domeradzki
 // Contact: JustArchi@JustArchi.net
 // |
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,12 +19,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NETFRAMEWORK
+using ArchiSteamFarm.Compatibility;
+using File = System.IO.File;
+using Path = System.IO.Path;
+#else
+using Microsoft.Extensions.Hosting;
+#endif
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using ArchiSteamFarm.Core;
 using ArchiSteamFarm.IPC.Controllers.Api;
 using ArchiSteamFarm.Localization;
 using ArchiSteamFarm.NLog;
+using ArchiSteamFarm.NLog.Targets;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -32,14 +41,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog.Web;
 
-#if !NETFRAMEWORK
-using Microsoft.Extensions.Hosting;
-#endif
-
 namespace ArchiSteamFarm.IPC {
 	internal static class ArchiKestrel {
 		internal static HistoryTarget? HistoryTarget { get; private set; }
-		internal static string WebsiteDirectory { get; private set; } = Path.Combine(AppContext.BaseDirectory, SharedInfo.WebsiteDirectory);
 
 #if NETFRAMEWORK
 		private static IWebHost? KestrelWebHost;
@@ -74,10 +78,7 @@ namespace ArchiSteamFarm.IPC {
 #endif
 
 			string customDirectory = Path.Combine(Directory.GetCurrentDirectory(), SharedInfo.WebsiteDirectory);
-
-			if (Directory.Exists(customDirectory)) {
-				WebsiteDirectory = customDirectory;
-			}
+			string websiteDirectory = Directory.Exists(customDirectory) ? customDirectory : Path.Combine(AppContext.BaseDirectory, SharedInfo.WebsiteDirectory);
 
 			// Set default content root
 			builder.UseContentRoot(SharedInfo.HomeDirectory);
@@ -94,7 +95,7 @@ namespace ArchiSteamFarm.IPC {
 			if (customConfigExists) {
 				if (Debugging.IsDebugConfigured) {
 					try {
-						string json = await RuntimeCompatibility.File.ReadAllTextAsync(customConfigPath).ConfigureAwait(false);
+						string json = await Compatibility.File.ReadAllTextAsync(customConfigPath).ConfigureAwait(false);
 
 						if (!string.IsNullOrEmpty(json)) {
 							JObject jObject = JObject.Parse(json);
@@ -116,7 +117,7 @@ namespace ArchiSteamFarm.IPC {
 			builder.ConfigureWebHostDefaults(
 				webBuilder => {
 					// Set default web root
-					webBuilder.UseWebRoot(WebsiteDirectory);
+					webBuilder.UseWebRoot(websiteDirectory);
 
 					// Now conditionally initialize settings that are not possible to override
 					if (customConfigExists) {

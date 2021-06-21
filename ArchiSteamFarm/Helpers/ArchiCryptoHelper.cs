@@ -187,6 +187,9 @@ namespace ArchiSteamFarm.Helpers {
 				throw new ArgumentNullException(nameof(encryptedString));
 			}
 
+#if __MOBILE__
+			return null;
+#else
 			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
 				return null;
 			}
@@ -204,6 +207,7 @@ namespace ArchiSteamFarm.Helpers {
 
 				return null;
 			}
+#endif
 		}
 
 		private static string? EncryptAES(string decryptedString) {
@@ -234,6 +238,9 @@ namespace ArchiSteamFarm.Helpers {
 				throw new ArgumentNullException(nameof(decryptedString));
 			}
 
+#if __MOBILE__
+			return null;
+#else
 			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
 				return null;
 			}
@@ -251,6 +258,7 @@ namespace ArchiSteamFarm.Helpers {
 
 				return null;
 			}
+#endif
 		}
 
 		public enum ECryptoMethod : byte {

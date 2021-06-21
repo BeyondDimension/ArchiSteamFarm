@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -41,7 +41,7 @@ namespace ArchiSteamFarm.Compatibility {
 		private static readonly DateTime SavedProcessStartTime = DateTime.UtcNow;
 #endif
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 		public static bool IsRunningOnMono => Type.GetType("Mono.Runtime") != null;
 #else
 		public static bool IsRunningOnMono => false;
@@ -61,7 +61,7 @@ namespace ArchiSteamFarm.Compatibility {
 			}
 		}
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 		public static Task<byte[]> ComputeHashAsync(this HashAlgorithm hashAlgorithm, Stream inputStream) {
 			if (hashAlgorithm == null) {
 				throw new ArgumentNullException(nameof(hashAlgorithm));

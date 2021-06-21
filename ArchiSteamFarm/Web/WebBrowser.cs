@@ -36,6 +36,15 @@ using ArchiSteamFarm.NLog;
 using ArchiSteamFarm.Web.Responses;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
+#if NETFRAMEWORK
+using HttpClientHandler = System.Net.Http.HttpClientHandler;
+#elif __ANDROID__
+using HttpClientHandler = Xamarin.Android.Net.AndroidClientHandler;
+#elif __IOS__
+using HttpClientHandler = System.Net.Http.NSUrlSessionHandler;
+#elif NETCOREAPP
+using HttpClientHandler = System.Net.Http.SocketsHttpHandler;
+#endif
 
 namespace ArchiSteamFarm.Web {
 	public sealed class WebBrowser : IDisposable {
@@ -63,23 +72,29 @@ namespace ArchiSteamFarm.Web {
 			HttpClientHandler = new HttpClientHandler {
 				AllowAutoRedirect = false, // This must be false if we want to handle custom redirection schemes such as "steammobile://"
 
-#if NETFRAMEWORK
+#if !__IOS__
+#if NETFRAMEWORK || NETSTANDARD
 				AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
 #else
 				AutomaticDecompression = DecompressionMethods.All,
+#endif
 #endif
 
 				CookieContainer = CookieContainer
 			};
 
+#if !__IOS__
 			if (webProxy != null) {
 				HttpClientHandler.Proxy = webProxy;
 				HttpClientHandler.UseProxy = true;
 			}
+#endif
 
+#if !__IOS__
 			if (!StaticHelpers.IsRunningOnMono) {
 				HttpClientHandler.MaxConnectionsPerServer = MaxConnections;
 			}
+#endif
 
 			HttpClient = GenerateDisposableHttpClient(extendedTimeout);
 		}
@@ -96,7 +111,7 @@ namespace ArchiSteamFarm.Web {
 			}
 
 			HttpClient result = new(HttpClientHandler, false) {
-#if !NETFRAMEWORK
+#if !NETFRAMEWORK && !NETSTANDARD
 				DefaultRequestVersion = HttpVersion.Version20,
 #endif
 				Timeout = TimeSpan.FromSeconds(extendedTimeout ? ExtendedTimeoutMultiplier * ASF.GlobalConfig.ConnectionTimeout : ASF.GlobalConfig.ConnectionTimeout)
@@ -755,7 +770,7 @@ namespace ArchiSteamFarm.Web {
 			HttpResponseMessage response;
 
 			using (HttpRequestMessage requestMessage = new(httpMethod, request)) {
-#if !NETFRAMEWORK
+#if !NETFRAMEWORK && !NETSTANDARD
 				requestMessage.Version = HttpClient.DefaultRequestVersion;
 #endif
 

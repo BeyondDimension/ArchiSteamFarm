@@ -1,14 +1,30 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="MSBuild.Sdk.Extras">
 	<PropertyGroup>
 		<DefaultItemExcludes>$(DefaultItemExcludes);config/**;debug/**;logs/**;overlay/**</DefaultItemExcludes>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
-		<OutputType>Exe</OutputType>
+		<TargetFrameworks>net5.0;net48;netstandard2.1;Xamarin.iOS10;MonoAndroid11.0</TargetFrameworks>
+		<OutputType>Library</OutputType>
+		<AssemblyName>ArchiSteamFarm</AssemblyName>
+		<RootNamespace>ArchiSteamFarm</RootNamespace>
 	</PropertyGroup>
+
+	<!--<PropertyGroup Condition=" '$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'net5.0'">
+		<OutputType>Exe</OutputType>
+		<ApplicationIcon>../resources/ASF.ico</ApplicationIcon>
+	</PropertyGroup>-->
 
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net48'">
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
+
+	<PropertyGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))">
+		<DefineConstants>NETSTANDARD;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
+	<!--<PropertyGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))">
+		<OutputType>Library</OutputType>
+	</PropertyGroup>-->
 
 	<ItemGroup>
 		<PackageReference Include="AngleSharp.XPath" />
@@ -32,6 +48,23 @@
 	<ItemGroup Condition="'$(TargetFramework)' != 'net48'">
 		<PackageReference Include="System.IO.FileSystem.AccessControl" />
 		<PackageReference Include="System.Security.Cryptography.ProtectedData" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))">
+		<Reference Include="System.ComponentModel.DataAnnotations" />
+		<Reference Include="System.IO.Compression" />
+		<Reference Include="System.IO.Compression.FileSystem" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))">
+		<PackageReference Include="Microsoft.AspNetCore.Cors" />
+		<PackageReference Include="Microsoft.AspNetCore.Diagnostics" />
+		<PackageReference Include="Microsoft.AspNetCore.HttpOverrides" />
+		<PackageReference Include="Microsoft.AspNetCore.ResponseCompression" />
+		<PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" />
+		<PackageReference Include="Microsoft.AspNetCore.WebSockets" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net48'">
@@ -78,4 +111,19 @@
 			<Link>www\%(RecursiveDir)%(Filename)%(Extension)</Link>
 		</Content>
 	</ItemGroup>
+
+	<Target Name="VS16_RemoveSystemMemoryAndSystemBuffers" BeforeTargets="FindReferenceAssembliesForReferences" Condition=" $(TargetFramework.StartsWith('Xamarin.iOS')) And '$(MSBuildVersion)' &gt;= '16.0' ">
+		<ItemGroup>
+			<_ReferencePathToRemove Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)'=='System.Memory' Or '%(ReferencePath.NuGetPackageId)'=='System.Buffers'" />
+			<ReferencePath Remove="@(_ReferencePathToRemove)" />
+		</ItemGroup>
+	</Target>
+
+	<Target Name="VS16_RemoveSystemIOFileSystemAccessControlAndSystemSecurityAccessControl" BeforeTargets="FindReferenceAssembliesForReferences" Condition=" ($(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))) And '$(MSBuildVersion)' &gt;= '16.0' ">
+		<ItemGroup>
+			<_ReferencePathToRemove Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)'=='System.IO.FileSystem.AccessControl' Or '%(ReferencePath.NuGetPackageId)'=='System.Security.AccessControl'" />
+			<ReferencePath Remove="@(_ReferencePathToRemove)" />
+		</ItemGroup>
+	</Target>
 </Project>
+ 

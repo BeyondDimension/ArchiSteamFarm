@@ -36,7 +36,7 @@ namespace ArchiSteamFarm.Compatibility {
 		}
 
 		public static void Move(string sourceFileName, string destFileName, bool overwrite) {
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 			if (overwrite && System.IO.File.Exists(destFileName)) {
 				System.IO.File.Delete(destFileName);
 			}

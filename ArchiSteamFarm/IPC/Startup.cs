@@ -21,11 +21,13 @@
 
 #if NETFRAMEWORK
 using ArchiSteamFarm.Compatibility;
-using Newtonsoft.Json.Converters;
 using File = System.IO.File;
 using Path = System.IO.Path;
 #else
 using System.IO;
+#endif
+#if NETFRAMEWORK || NETSTANDARD
+using Newtonsoft.Json.Converters;
 #endif
 using System;
 using System.Collections.Generic;
@@ -55,7 +57,7 @@ namespace ArchiSteamFarm.IPC {
 
 		public Startup(IConfiguration configuration) => Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 		[UsedImplicitly]
 		public void Configure(IApplicationBuilder app, IHostingEnvironment env) {
 #else
@@ -99,7 +101,7 @@ namespace ArchiSteamFarm.IPC {
 			app.UseDefaultFiles();
 			app.UseStaticFiles();
 
-#if !NETFRAMEWORK
+#if !NETFRAMEWORK && !NETSTANDARD
 			app.UseRouting();
 #endif
 
@@ -115,7 +117,7 @@ namespace ArchiSteamFarm.IPC {
 			}
 
 			// Add support for mapping controllers
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 			app.UseMvcWithDefaultRoute();
 #else
 			app.UseEndpoints(endpoints => endpoints.MapControllers());
@@ -246,7 +248,7 @@ namespace ArchiSteamFarm.IPC {
 			services.AddSwaggerGenNewtonsoftSupport();
 
 			// We need MVC for /Api, but we're going to use only a small subset of all available features
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 			IMvcCoreBuilder mvc = services.AddMvcCore();
 #else
 			IMvcBuilder mvc = services.AddControllers();
@@ -266,7 +268,7 @@ namespace ArchiSteamFarm.IPC {
 			// Use latest compatibility version for MVC
 			mvc.SetCompatibilityVersion(CompatibilityVersion.Latest);
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 			// Add standard formatters
 			mvc.AddFormatterMappings();
 
@@ -274,7 +276,7 @@ namespace ArchiSteamFarm.IPC {
 			mvc.AddApiExplorer();
 #endif
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 			// Add JSON formatters that will be used as default ones if no specific formatters are asked for
 			mvc.AddJsonFormatters();
 
@@ -290,7 +292,7 @@ namespace ArchiSteamFarm.IPC {
 						options.SerializerSettings.Formatting = Formatting.Indented;
 					}
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 					// .NET Framework serializes Version as object by default, serialize it as string just like .NET Core
 					options.SerializerSettings.Converters.Add(new VersionConverter());
 #endif

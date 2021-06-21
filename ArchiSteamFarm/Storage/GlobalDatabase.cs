@@ -40,6 +40,7 @@ using ArchiSteamFarm.Steam;
 using ArchiSteamFarm.Steam.SteamKit2;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ArchiSteamFarm.Storage {
 	public sealed class GlobalDatabase : SerializableFile {
@@ -53,6 +54,9 @@ namespace ArchiSteamFarm.Storage {
 
 		[JsonProperty(Required = Required.DisallowNull)]
 		internal readonly InMemoryServerListProvider ServerListProvider = new();
+
+		[JsonProperty(Required = Required.DisallowNull)]
+		private readonly ConcurrentDictionary<string, JToken> KeyValueJsonStorage = new();
 
 		[JsonProperty(Required = Required.DisallowNull)]
 		private readonly ConcurrentDictionary<uint, ulong> PackagesAccessTokens = new();
@@ -108,6 +112,52 @@ namespace ArchiSteamFarm.Storage {
 
 		[JsonConstructor]
 		private GlobalDatabase() => ServerListProvider.ServerListUpdated += OnObjectModified;
+
+		[PublicAPI]
+		public void DeleteFromJsonStorage(string key) {
+			if (string.IsNullOrEmpty(key)) {
+				throw new ArgumentNullException(nameof(key));
+			}
+
+			if (!KeyValueJsonStorage.TryRemove(key, out _)) {
+				return;
+			}
+
+			Utilities.InBackground(Save);
+		}
+
+		[PublicAPI]
+		public JToken? LoadFromJsonStorage(string key) {
+			if (string.IsNullOrEmpty(key)) {
+				throw new ArgumentNullException(nameof(key));
+			}
+
+			return KeyValueJsonStorage.TryGetValue(key, out JToken? value) ? value : null;
+		}
+
+		[PublicAPI]
+		public void SaveToJsonStorage(string key, JToken value) {
+			if (string.IsNullOrEmpty(key)) {
+				throw new ArgumentNullException(nameof(key));
+			}
+
+			if (value == null) {
+				throw new ArgumentNullException(nameof(value));
+			}
+
+			if (value.Type == JTokenType.Null) {
+				DeleteFromJsonStorage(key);
+
+				return;
+			}
+
+			if (KeyValueJsonStorage.TryGetValue(key, out JToken? currentValue) && JToken.DeepEquals(currentValue, value)) {
+				return;
+			}
+
+			KeyValueJsonStorage[key] = value;
+			Utilities.InBackground(Save);
+		}
 
 		protected override void Dispose(bool disposing) {
 			if (disposing) {
@@ -291,6 +341,7 @@ namespace ArchiSteamFarm.Storage {
 		// ReSharper disable UnusedMember.Global
 		public bool ShouldSerializeBackingCellID() => BackingCellID != 0;
 		public bool ShouldSerializeBackingLastChangeNumber() => LastChangeNumber != 0;
+		public bool ShouldSerializeKeyValueJsonStorage() => !KeyValueJsonStorage.IsEmpty;
 		public bool ShouldSerializePackagesAccessTokens() => !PackagesAccessTokens.IsEmpty;
 		public bool ShouldSerializePackagesData() => !PackagesData.IsEmpty;
 		public bool ShouldSerializeServerListProvider() => ServerListProvider.ShouldSerializeServerRecords();

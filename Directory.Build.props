@@ -50,10 +50,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT' OR '$(ASFNetFramework)' != ''">
-    <TargetFrameworks>netstandard2.1;net5.0;net48;Xamarin.iOS10;MonoAndroid11.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;net5.0;net48</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(OS)' != 'Windows_NT' AND '$(ASFNetFramework)' == ''">
-    <TargetFramework>netstandard2.1;net5.0;Xamarin.iOS10;MonoAndroid11.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 </Project>

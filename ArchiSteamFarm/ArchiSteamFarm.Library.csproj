@@ -3,7 +3,7 @@
 		<DefaultItemExcludes>$(DefaultItemExcludes);config/**;debug/**;logs/**;overlay/**</DefaultItemExcludes>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
-		<TargetFrameworks>net5.0;net48;netstandard2.1;Xamarin.iOS10;MonoAndroid11.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net5.0;net48;Xamarin.iOS10;MonoAndroid11.0</TargetFrameworks>
 		<OutputType>Library</OutputType>
 		<AssemblyName>ArchiSteamFarm</AssemblyName>
 		<RootNamespace>ArchiSteamFarm</RootNamespace>

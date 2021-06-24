@@ -4,7 +4,8 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-		<TargetFrameworks>netstandard2.1;net5.0;net48;Xamarin.iOS10;MonoAndroid11.0</TargetFrameworks>
+		<!--<TargetFrameworks>netstandard2.1;net5.0;net6.0;net48;Xamarin.iOS10;MonoAndroid11.0;net6.0-android;net6.0-macos;net6.0-maccatalyst;net6.0-ios</TargetFrameworks>-->
+		<TargetFrameworks>netstandard2.1;Xamarin.iOS10;MonoAndroid11.0;net6.0</TargetFrameworks>
 		<OutputType>Library</OutputType>
 		<AssemblyName>ArchiSteamFarm</AssemblyName>
 		<RootNamespace>ArchiSteamFarm</RootNamespace>

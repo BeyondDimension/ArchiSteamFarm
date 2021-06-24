@@ -54,7 +54,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 				return BadRequest(new GenericResponse(false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsEmpty, nameof(request.StringToEncrypt))));
 			}
 
-			string? encryptedString = Actions.Encrypt(request.CryptoMethod, request.StringToEncrypt!);
+			string? encryptedString = ASFActions.Encrypt(request.CryptoMethod, request.StringToEncrypt!);
 
 			return Ok(new GenericResponse<string>(encryptedString));
 		}
@@ -92,7 +92,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 				return BadRequest(new GenericResponse(false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsEmpty, nameof(request.StringToHash))));
 			}
 
-			string hash = Actions.Hash(request.HashingMethod, request.StringToHash!);
+			string hash = ASFActions.Hash(request.HashingMethod, request.StringToHash!);
 
 			return Ok(new GenericResponse<string>(hash));
 		}
@@ -154,7 +154,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 		[HttpPost("Exit")]
 		[ProducesResponseType(typeof(GenericResponse), (int) HttpStatusCode.OK)]
 		public ActionResult<GenericResponse> ExitPost() {
-			(bool success, string message) = Actions.Exit();
+			(bool success, string message) = ASFActions.Exit();
 
 			return Ok(new GenericResponse(success, message));
 		}
@@ -165,7 +165,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 		[HttpPost("Restart")]
 		[ProducesResponseType(typeof(GenericResponse), (int) HttpStatusCode.OK)]
 		public ActionResult<GenericResponse> RestartPost() {
-			(bool success, string message) = Actions.Restart();
+			(bool success, string message) = ASFActions.Restart();
 
 			return Ok(new GenericResponse(success, message));
 		}
@@ -176,7 +176,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 		[HttpPost("Update")]
 		[ProducesResponseType(typeof(GenericResponse<string>), (int) HttpStatusCode.OK)]
 		public async Task<ActionResult<GenericResponse<string>>> UpdatePost() {
-			(bool success, string? message, Version? version) = await Actions.Update().ConfigureAwait(false);
+			(bool success, string? message, Version? version) = await ASFActions.Update().ConfigureAwait(false);
 
 			if (string.IsNullOrEmpty(message)) {
 				message = success ? Strings.Success : Strings.WarningFailed;

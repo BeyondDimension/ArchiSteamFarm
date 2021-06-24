@@ -1180,7 +1180,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 				return FormatStaticResponse(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(cryptoMethod)));
 			}
 
-			string? encryptedString = Actions.Encrypt(cryptoMethod, stringToEncrypt);
+			string? encryptedString = ASFActions.Encrypt(cryptoMethod, stringToEncrypt);
 
 			return FormatStaticResponse(!string.IsNullOrEmpty(encryptedString) ? string.Format(CultureInfo.CurrentCulture, Strings.Result, encryptedString) : Strings.WarningFailed);
 		}
@@ -1194,7 +1194,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 				return null;
 			}
 
-			(bool success, string message) = Actions.Exit();
+			(bool success, string message) = ASFActions.Exit();
 
 			return FormatStaticResponse(success ? message : string.Format(CultureInfo.CurrentCulture, Strings.WarningFailedWithError, message));
 		}
@@ -1264,7 +1264,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 				return FormatStaticResponse(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(hashingMethod)));
 			}
 
-			string hash = Actions.Hash(hashingMethod, stringToHash);
+			string hash = ASFActions.Hash(hashingMethod, stringToHash);
 
 			return FormatStaticResponse(!string.IsNullOrEmpty(hash) ? string.Format(CultureInfo.CurrentCulture, Strings.Result, hash) : Strings.WarningFailed);
 		}
@@ -2924,7 +2924,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 				return null;
 			}
 
-			(bool success, string message) = Actions.Restart();
+			(bool success, string message) = ASFActions.Restart();
 
 			return FormatStaticResponse(success ? message : string.Format(CultureInfo.CurrentCulture, Strings.WarningFailedWithError, message));
 		}
@@ -3397,7 +3397,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 				return null;
 			}
 
-			(bool success, string? message, Version? version) = await Actions.Update().ConfigureAwait(false);
+			(bool success, string? message, Version? version) = await ASFActions.Update().ConfigureAwait(false);
 
 			return FormatStaticResponse((success ? Strings.Success : Strings.WarningFailed) + (!string.IsNullOrEmpty(message) ? " " + message : version != null ? " " + version : ""));
 		}

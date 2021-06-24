@@ -85,7 +85,7 @@ namespace ArchiSteamFarm.Compatibility {
 				throw new ArgumentNullException(nameof(input));
 			}
 
-			return input.IndexOf(value, comparisonType) >= 0;
+			return input.Contains(value, comparisonType);
 		}
 
 		// ReSharper disable once UseDeconstructionOnParameter - we actually implement deconstruction here

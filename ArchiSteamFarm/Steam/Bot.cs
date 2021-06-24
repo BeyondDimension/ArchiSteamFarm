@@ -85,7 +85,7 @@ namespace ArchiSteamFarm.Steam {
 
 		[JsonIgnore]
 		[PublicAPI]
-		public Actions Actions { get; }
+		public ASFActions Actions { get; }
 
 		[PublicAPI]
 		public ArchiHandler ArchiHandler { get; }
@@ -311,7 +311,7 @@ namespace ArchiSteamFarm.Steam {
 			CallbackManager.Subscribe<UserNotificationsCallback>(OnUserNotifications);
 			CallbackManager.Subscribe<ArchiHandler.VanityURLChangedCallback>(OnVanityURLChangedCallback);
 
-			Actions = new Actions(this);
+			Actions = new ASFActions(this);
 			CardsFarmer = new CardsFarmer(this);
 			Commands = new Commands(this);
 			Trading = new Trading(this);

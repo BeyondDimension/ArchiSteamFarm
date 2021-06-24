@@ -46,7 +46,7 @@ using JetBrains.Annotations;
 using SteamKit2;
 
 namespace ArchiSteamFarm.Steam.Interaction {
-	public sealed class Actions : IAsyncDisposable {
+	public sealed class ASFActions : IAsyncDisposable {
 		private static readonly SemaphoreSlim GiftCardsSemaphore = new(1, 1);
 
 		private readonly Bot Bot;
@@ -57,7 +57,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 		private bool ProcessingGiftsScheduled;
 		private bool TradingScheduled;
 
-		internal Actions(Bot bot) => Bot = bot ?? throw new ArgumentNullException(nameof(bot));
+		internal ASFActions(Bot bot) => Bot = bot ?? throw new ArgumentNullException(nameof(bot));
 
 		public async ValueTask DisposeAsync() {
 			// Those are objects that are always being created if constructor doesn't throw exception

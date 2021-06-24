@@ -450,11 +450,11 @@ namespace ArchiSteamFarm.Web {
 						}
 					}
 
-					XmlDocument xmlDocument = new();
+					XmlResolver? xmlResolver = null;
+					XmlDocument xmlDocument = new() { XmlResolver = xmlResolver! };
 
 					try {
 						using XmlReader xmlReader = XmlReader.Create(response.Content, new XmlReaderSettings { XmlResolver = null });
-
 						xmlDocument.Load(xmlReader);
 					} catch (Exception e) {
 						ArchiLogger.LogGenericWarningException(e);

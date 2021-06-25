@@ -11,6 +11,12 @@
 		<RootNamespace>ArchiSteamFarm</RootNamespace>
 	</PropertyGroup>
 
+	<PropertyGroup Condition=" $(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0')) ">
+		<!--<RuntimeIdentifiers>win7-x64;osx-x64;linux-x64;osx.11.0-arm64</RuntimeIdentifiers>-->
+		<RuntimeIdentifiers>win7-x64;osx-x64;linux-x64</RuntimeIdentifiers>
+		<ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
+	</PropertyGroup>
+
 	<!--<PropertyGroup Condition=" '$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'net5.0'">
 		<OutputType>Exe</OutputType>
 		<ApplicationIcon>../resources/ASF.ico</ApplicationIcon>

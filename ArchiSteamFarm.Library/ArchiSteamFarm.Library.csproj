@@ -1,21 +1,22 @@
 <Project Sdk="MSBuild.Sdk.Extras">
+	<!--<Project Sdk="Microsoft.NET.Sdk">-->
 	<PropertyGroup>
 		<DefaultItemExcludes>$(DefaultItemExcludes);config/**;debug/**;logs/**;overlay/**</DefaultItemExcludes>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 		<!--<TargetFrameworks>netstandard2.1;net5.0;net6.0;net48;Xamarin.iOS10;MonoAndroid11.0;net6.0-android;net6.0-macos;net6.0-maccatalyst;net6.0-ios</TargetFrameworks>-->
-		<TargetFrameworks>netstandard2.1;Xamarin.iOS10;MonoAndroid11.0;net6.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;Xamarin.iOS10;MonoAndroid11.0;net5.0</TargetFrameworks>
 		<OutputType>Library</OutputType>
 		<AssemblyName>ArchiSteamFarm</AssemblyName>
 		<RootNamespace>ArchiSteamFarm</RootNamespace>
 	</PropertyGroup>
 
-	<PropertyGroup Condition=" $(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0')) ">
-		<!--<RuntimeIdentifiers>win7-x64;osx-x64;linux-x64;osx.11.0-arm64</RuntimeIdentifiers>-->
+	<!--<PropertyGroup Condition=" $(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0')) ">
+		--><!--<RuntimeIdentifiers>win7-x64;osx-x64;linux-x64;osx.11.0-arm64</RuntimeIdentifiers>--><!--
 		<RuntimeIdentifiers>win7-x64;osx-x64;linux-x64</RuntimeIdentifiers>
 		<ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
-	</PropertyGroup>
+	</PropertyGroup>-->
 
 	<!--<PropertyGroup Condition=" '$(TargetFramework)' == 'net48' Or '$(TargetFramework)' == 'net5.0'">
 		<OutputType>Exe</OutputType>
@@ -94,10 +95,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<TrimmerRootDescriptor Include="TrimmerRoots.xml" />
+		<TrimmerRootDescriptor Include="..\ArchiSteamFarm\TrimmerRoots.xml" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Include="..\ArchiSteamFarm\Localization\*.resx">
+			<LinkBase>Localization</LinkBase>
+		</EmbeddedResource>
 		<EmbeddedResource Update="Localization\Strings.resx">
 			<Generator>PublicResXFileCodeGenerator</Generator>
 			<LastGenOutput>Strings.Designer.cs</LastGenOutput>
@@ -113,7 +117,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="overlay\all\**\*.*">
+		<Content Include="..\ArchiSteamFarm\overlay\all\**\*.*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 			<Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
@@ -129,6 +133,30 @@
 			<LinkBase>Steam++</LinkBase>
 		</Compile>
 		<ProjectReference Include="..\..\..\src\Common.CoreLib\Common.CoreLib.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Include="..\ArchiSteamFarm\**\*.cs" />
+		<Compile Remove="..\ArchiSteamFarm\obj\**" />
+		<Compile Remove="obj\**" />
+		<EmbeddedResource Remove="obj\**" />
+		<None Remove="obj\**" />
+		<Compile Remove="..\ArchiSteamFarm\config\**" />
+		<Compile Remove="config\**" />
+		<EmbeddedResource Remove="config\**" />
+		<None Remove="config\**" />
+		<Compile Remove="..\ArchiSteamFarm\debug\**" />
+		<Compile Remove="debug\**" />
+		<EmbeddedResource Remove="debug\**" />
+		<None Remove="debug\**" />
+		<Compile Remove="..\ArchiSteamFarm\logs\**" />
+		<Compile Remove="logs\**" />
+		<EmbeddedResource Remove="logs\**" />
+		<None Remove="logs\**" />
+		<Compile Remove="..\ArchiSteamFarm\overlay\**" />
+		<Compile Remove="overlay\**" />
+		<EmbeddedResource Remove="overlay\**" />
+		<None Remove="overlay\**" />
 	</ItemGroup>
 
 	<Target Name="VS16_RemoveSystemMemoryAndSystemBuffers" BeforeTargets="FindReferenceAssembliesForReferences" Condition=" $(TargetFramework.StartsWith('Xamarin.iOS')) And '$(MSBuildVersion)' &gt;= '16.0' ">

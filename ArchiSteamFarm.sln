@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArchiSteamFarm.CustomPlugin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArchiSteamFarm.OfficialPlugins.SteamTokenDumper", "ArchiSteamFarm.OfficialPlugins.SteamTokenDumper\ArchiSteamFarm.OfficialPlugins.SteamTokenDumper.csproj", "{324E42B1-3C5D-421D-A600-1BEEE7AF401A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArchiSteamFarm.Library", "ArchiSteamFarm\ArchiSteamFarm.Library.csproj", "{30F6E79D-EB7E-4E80-9776-B53B546D23A7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArchiSteamFarm.Library", "ArchiSteamFarm.Library\ArchiSteamFarm.Library.csproj", "{C22B160C-47FB-47D2-A503-93A054F18CFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,10 +40,10 @@ Global
 		{324E42B1-3C5D-421D-A600-1BEEE7AF401A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{324E42B1-3C5D-421D-A600-1BEEE7AF401A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{324E42B1-3C5D-421D-A600-1BEEE7AF401A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{30F6E79D-EB7E-4E80-9776-B53B546D23A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{30F6E79D-EB7E-4E80-9776-B53B546D23A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{30F6E79D-EB7E-4E80-9776-B53B546D23A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{30F6E79D-EB7E-4E80-9776-B53B546D23A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C22B160C-47FB-47D2-A503-93A054F18CFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C22B160C-47FB-47D2-A503-93A054F18CFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C22B160C-47FB-47D2-A503-93A054F18CFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C22B160C-47FB-47D2-A503-93A054F18CFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

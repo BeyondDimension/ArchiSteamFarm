@@ -164,6 +164,7 @@ namespace ArchiSteamFarm {
 		}
 
 		private static async Task<bool> InitCore(IReadOnlyCollection<string>? args) {
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 			Directory.SetCurrentDirectory(SharedInfo.HomeDirectory);
 
 			// Allow loading configs from source tree if it's a debug build
@@ -182,6 +183,7 @@ namespace ArchiSteamFarm {
 					Directory.SetCurrentDirectory(SharedInfo.HomeDirectory);
 				}
 			}
+#endif
 
 			// Parse args
 			if (args != null) {

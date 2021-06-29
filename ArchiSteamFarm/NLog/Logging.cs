@@ -43,7 +43,7 @@ namespace ArchiSteamFarm.NLog {
 		internal const string NLogConfigurationFile = "NLog.config";
 
 		private const byte ConsoleResponsivenessDelay = 250; // In milliseconds
-		private const string GeneralLayout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${processname}-${processid}|${level:uppercase=true}|" + LayoutMessage;
+		internal const string GeneralLayout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${processname}-${processid}|${level:uppercase=true}|" + LayoutMessage;
 		private const string LayoutMessage = @"${logger}|${message}${onexception:inner= ${exception:format=toString,Data}}";
 
 		private static readonly ConcurrentHashSet<LoggingRule> ConsoleLoggingRules = new();
@@ -145,6 +145,7 @@ namespace ArchiSteamFarm.NLog {
 		}
 
 		internal static void InitCoreLoggers(bool uniqueInstance) {
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 			try {
 				if ((Directory.GetCurrentDirectory() != AppContext.BaseDirectory) && File.Exists(NLogConfigurationFile)) {
 					LogManager.Configuration = new XmlLoggingConfiguration(NLogConfigurationFile);
@@ -152,6 +153,7 @@ namespace ArchiSteamFarm.NLog {
 			} catch (Exception e) {
 				ASF.ArchiLogger.LogGenericException(e);
 			}
+#endif
 
 			if (LogManager.Configuration != null) {
 				IsUsingCustomConfiguration = true;

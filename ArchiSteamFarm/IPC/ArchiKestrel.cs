@@ -77,8 +77,12 @@ namespace ArchiSteamFarm.IPC {
 			HostBuilder builder = new();
 #endif
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+			string websiteDirectory = ASFPathHelper.WebsiteDirectory;
+#else
 			string customDirectory = Path.Combine(Directory.GetCurrentDirectory(), SharedInfo.WebsiteDirectory);
 			string websiteDirectory = Directory.Exists(customDirectory) ? customDirectory : Path.Combine(AppContext.BaseDirectory, SharedInfo.WebsiteDirectory);
+#endif
 
 			// Set default content root
 			builder.UseContentRoot(SharedInfo.HomeDirectory);

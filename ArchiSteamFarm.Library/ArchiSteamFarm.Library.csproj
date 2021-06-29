@@ -122,14 +122,27 @@
 			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 			<Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
 		</Content>
+	</ItemGroup>
+
+	<ItemGroup Condition=" !Exists('$(MSBuildProjectDirectory)\..\..\InternalsVisibleTo.cs') And (($(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0'))) Or '$(TargetFramework)' == 'net48') ">
 		<Content Include="..\ASF-ui\dist\**\*.*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>www\%(RecursiveDir)%(Filename)%(Extension)</Link>
 		</Content>
 	</ItemGroup>
 
+	<ItemGroup Condition=" Exists('$(MSBuildProjectDirectory)\..\..\InternalsVisibleTo.cs') And (($(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0'))) Or '$(TargetFramework)' == 'net48') ">
+		<Content Include="..\ASF-ui\dist\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ASF-ui\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		</Content>
+	</ItemGroup>
+
 	<ItemGroup Condition=" Exists('$(MSBuildProjectDirectory)\..\..\InternalsVisibleTo.cs') And '$(TargetFramework)' != 'net48'">
 		<Compile Include="..\..\InternalsVisibleTo.cs">
+			<LinkBase>Steam++</LinkBase>
+		</Compile>
+		<Compile Include="..\..\ArchiSteamFarmPathHelper.cs">
 			<LinkBase>Steam++</LinkBase>
 		</Compile>
 		<ProjectReference Include="..\..\..\src\Common.CoreLib\Common.CoreLib.csproj" />

@@ -12,8 +12,14 @@
 		<RootNamespace>ArchiSteamFarm</RootNamespace>
 	</PropertyGroup>
 
+	<PropertyGroup Condition=" Exists('$(MSBuildProjectDirectory)\..\..\InternalsVisibleTo.cs') And '$(TargetFramework)' != 'net48'">
+		<DefineConstants>EMBEDDED_IN_STEAMPLUSPLUS;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
 	<!--<PropertyGroup Condition=" $(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0')) ">
-		--><!--<RuntimeIdentifiers>win7-x64;osx-x64;linux-x64;osx.11.0-arm64</RuntimeIdentifiers>--><!--
+		-->
+	<!--<RuntimeIdentifiers>win7-x64;osx-x64;linux-x64;osx.11.0-arm64</RuntimeIdentifiers>-->
+	<!--
 		<RuntimeIdentifiers>win7-x64;osx-x64;linux-x64</RuntimeIdentifiers>
 		<ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
 	</PropertyGroup>-->

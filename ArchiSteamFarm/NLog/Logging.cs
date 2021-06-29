@@ -209,7 +209,8 @@ namespace ArchiSteamFarm.NLog {
 
 			HistoryTarget? historyTarget = LogManager.Configuration.AllTargets.OfType<HistoryTarget>().FirstOrDefault();
 
-			if ((historyTarget == null) && !IsUsingCustomConfiguration) {
+			//if ((historyTarget == null) && !IsUsingCustomConfiguration) {
+			if ((historyTarget == null)) {
 				historyTarget = new HistoryTarget("History") {
 					Layout = GeneralLayout,
 					MaxCount = 20

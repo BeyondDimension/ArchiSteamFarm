@@ -121,7 +121,7 @@ namespace ArchiSteamFarm {
 			}
 		}
 
-		private static async Task Init(IReadOnlyCollection<string>? args) {
+		internal static async Task Init(IReadOnlyCollection<string>? args) {
 			AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
@@ -195,8 +195,11 @@ namespace ArchiSteamFarm {
 			}
 
 			OS.CoreInit(SystemRequired);
+			try {
+				Console.Title = SharedInfo.ProgramIdentifier;
+			} catch {
 
-			Console.Title = SharedInfo.ProgramIdentifier;
+			}
 			ASF.ArchiLogger.LogGenericInfo(SharedInfo.ProgramIdentifier);
 
 			string? copyright = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright;

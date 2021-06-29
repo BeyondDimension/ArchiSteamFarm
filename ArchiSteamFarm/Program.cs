@@ -121,13 +121,18 @@ namespace ArchiSteamFarm {
 			}
 		}
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		private static async Task Init(IReadOnlyCollection<string>? args) {
+#else
 		internal static async Task Init(IReadOnlyCollection<string>? args) {
+#endif
 			AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
-			// Add support for custom encodings
-			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#if !EMBEDDED_IN_STEAMPLUSPLUS
+			Console.Title = SharedInfo.ProgramIdentifier;
+#endif
 
 			// Add support for custom logging targets
 			Target.Register<HistoryTarget>(HistoryTarget.TargetName);
@@ -195,11 +200,11 @@ namespace ArchiSteamFarm {
 			}
 
 			OS.CoreInit(SystemRequired);
-			try {
-				Console.Title = SharedInfo.ProgramIdentifier;
-			} catch {
 
-			}
+#if !EMBEDDED_IN_STEAMPLUSPLUS
+			Console.Title = SharedInfo.ProgramIdentifier;
+#endif
+
 			ASF.ArchiLogger.LogGenericInfo(SharedInfo.ProgramIdentifier);
 
 			string? copyright = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright;

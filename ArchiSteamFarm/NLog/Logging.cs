@@ -223,10 +223,6 @@ namespace ArchiSteamFarm.NLog {
 				};
 
 				LogManager.Configuration.AddTarget(historyTarget);
-
-#if EMBEDDED_IN_STEAMPLUSPLUS
-				LogManager.Configuration.LoggingRules.Add(new LoggingRule("System.Application*", LogLevel.Off, historyTarget) { Final = true, });
-#endif
 				LogManager.Configuration.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, historyTarget));
 
 				LogManager.ReconfigExistingLoggers();

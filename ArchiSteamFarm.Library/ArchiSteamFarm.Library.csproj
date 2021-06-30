@@ -122,13 +122,13 @@
 		</Compile>
 	</ItemGroup>
 
-	<ItemGroup>
+	<!--<ItemGroup>
 		<Content Include="..\ArchiSteamFarm\overlay\all\**\*.*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 			<Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
 		</Content>
-	</ItemGroup>
+	</ItemGroup>-->
 
 	<ItemGroup Condition=" !Exists('$(MSBuildProjectDirectory)\..\..\InternalsVisibleTo.cs') And (($(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0'))) Or '$(TargetFramework)' == 'net48') ">
 		<Content Include="..\ASF-ui\dist\**\*.*">
@@ -149,6 +149,9 @@
 			<LinkBase>Steam++</LinkBase>
 		</Compile>
 		<Compile Include="..\..\ArchiSteamFarmPathHelper.cs">
+			<LinkBase>Steam++</LinkBase>
+		</Compile>
+		<Compile Include="..\..\ArchiSteamFarmLogManager.cs">
 			<LinkBase>Steam++</LinkBase>
 		</Compile>
 		<ProjectReference Include="..\..\..\src\Common.CoreLib\Common.CoreLib.csproj" />

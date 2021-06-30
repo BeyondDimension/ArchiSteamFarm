@@ -67,6 +67,9 @@ namespace ArchiSteamFarm {
 
 		internal static string HomeDirectory {
 			get {
+#if EMBEDDED_IN_STEAMPLUSPLUS
+				return ASFPathHelper.AppDataDirectory;
+#else
 				if (!string.IsNullOrEmpty(CachedHomeDirectory)) {
 					return CachedHomeDirectory!;
 				}
@@ -77,13 +80,10 @@ namespace ArchiSteamFarm {
 				// If the path goes to our own binary, the user is using OS-specific build, single-file or not, we'll use path to location of that binary then
 				// Otherwise, this path goes to some third-party binary, likely dotnet/mono, the user is using our generic build or other custom binary, we need to trust our base directory then
 
-#if EMBEDDED_IN_STEAMPLUSPLUS
-				CachedHomeDirectory = IOPath.BaseDirectory;
-#else
 				CachedHomeDirectory = Path.GetFileNameWithoutExtension(OS.ProcessFileName) == AssemblyName ? Path.GetDirectoryName(OS.ProcessFileName) ?? AppContext.BaseDirectory : AppContext.BaseDirectory;
-#endif
 
 				return CachedHomeDirectory;
+#endif
 			}
 		}
 
@@ -93,7 +93,9 @@ namespace ArchiSteamFarm {
 
 		private static Guid ModuleVersion => Assembly.GetExecutingAssembly().ManifestModule.ModuleVersionId;
 
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 		private static string? CachedHomeDirectory;
+#endif
 
 		internal static class BuildInfo {
 #if ASF_VARIANT_DOCKER

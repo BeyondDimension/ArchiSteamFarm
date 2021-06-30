@@ -122,10 +122,11 @@ namespace ArchiSteamFarm {
 		}
 
 #if EMBEDDED_IN_STEAMPLUSPLUS
-		private static async Task Init(IReadOnlyCollection<string>? args) {
+		internal
 #else
-		internal static async Task Init(IReadOnlyCollection<string>? args) {
+		private
 #endif
+			static async Task Init(IReadOnlyCollection<string>? args) {
 			AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 			AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 			TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;

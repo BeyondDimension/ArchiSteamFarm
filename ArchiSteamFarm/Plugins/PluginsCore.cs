@@ -216,11 +216,8 @@ namespace ArchiSteamFarm.Plugins {
 				}
 			}
 
-#if EMBEDDED_IN_STEAMPLUSPLUS
-			string customPluginsPath = Path.Combine(ASFPathHelper.AppDataDirectory, SharedInfo.PluginsDirectory);
-#else
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 			string customPluginsPath = Path.Combine(Directory.GetCurrentDirectory(), SharedInfo.PluginsDirectory);
-#endif
 
 			if (Directory.Exists(customPluginsPath)) {
 				HashSet<Assembly>? loadedAssemblies = LoadAssembliesFrom(customPluginsPath);
@@ -233,6 +230,7 @@ namespace ArchiSteamFarm.Plugins {
 					}
 				}
 			}
+#endif
 
 			return assemblies;
 		}

@@ -79,6 +79,10 @@ namespace ArchiSteamFarm.IPC {
 
 #if EMBEDDED_IN_STEAMPLUSPLUS
 			string websiteDirectory = ASFPathHelper.WebsiteDirectory;
+
+			if (!Directory.Exists(SharedInfo.HomeDirectory)) {
+				Directory.CreateDirectory(SharedInfo.HomeDirectory);
+			}
 #else
 			string customDirectory = Path.Combine(Directory.GetCurrentDirectory(), SharedInfo.WebsiteDirectory);
 			string websiteDirectory = Directory.Exists(customDirectory) ? customDirectory : Path.Combine(AppContext.BaseDirectory, SharedInfo.WebsiteDirectory);

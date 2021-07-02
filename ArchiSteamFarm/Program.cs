@@ -409,7 +409,12 @@ namespace ArchiSteamFarm {
 			return true;
 		}
 
-		private static async Task<bool> InitShutdownSequence() {
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		internal
+#else
+		private
+#endif
+		 static async Task<bool> InitShutdownSequence() {
 			if (ShutdownSequenceInitialized) {
 				return false;
 			}

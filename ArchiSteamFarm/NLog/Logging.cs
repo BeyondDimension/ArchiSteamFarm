@@ -405,8 +405,10 @@ namespace ArchiSteamFarm.NLog {
 				OnUserInputStart();
 			}
 
-			HistoryTarget? historyTarget = LogManager.Configuration.AllTargets.OfType<HistoryTarget>().FirstOrDefault();
-			ArchiKestrel.OnNewHistoryTarget(historyTarget);
+			if (LogManager.Configuration != null) {
+				HistoryTarget? historyTarget = LogManager.Configuration.AllTargets.OfType<HistoryTarget>().FirstOrDefault();
+				ArchiKestrel.OnNewHistoryTarget(historyTarget);
+			}
 		}
 
 		private static void OnUserInputEnd() {

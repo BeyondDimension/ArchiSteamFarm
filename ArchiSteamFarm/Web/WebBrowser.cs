@@ -36,15 +36,17 @@ using ArchiSteamFarm.NLog;
 using ArchiSteamFarm.Web.Responses;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
-#if NETFRAMEWORK
-using HttpClientHandler = System.Net.Http.HttpClientHandler;
-#elif __ANDROID__
+#if __ANDROID__
 using HttpClientHandler = Xamarin.Android.Net.AndroidClientHandler;
 #elif __IOS__
 using HttpClientHandler = System.Net.Http.NSUrlSessionHandler;
-#elif NETCOREAPP
-using HttpClientHandler = System.Net.Http.SocketsHttpHandler;
 #endif
+using GenerateHttpHandlerArgs = System.ValueTuple<
+	bool,
+	System.Net.DecompressionMethods,
+	System.Net.CookieContainer,
+	System.Net.IWebProxy?,
+	int?>;
 
 namespace ArchiSteamFarm.Web {
 	public sealed class WebBrowser : IDisposable {
@@ -64,37 +66,71 @@ namespace ArchiSteamFarm.Web {
 
 		private readonly ArchiLogger ArchiLogger;
 		private readonly HttpClient HttpClient;
-		private readonly HttpClientHandler HttpClientHandler;
+		private readonly HttpMessageHandler HttpClientHandler;
+
+		public static Func<GenerateHttpHandlerArgs, HttpMessageHandler>? GenerateHttpHandlerDelegate { get; set; }
+
+		public static THttpClientHandler GenerateHttpHandler<THttpClientHandler>(GenerateHttpHandlerArgs args) where THttpClientHandler : HttpClientHandler, new() {
+			THttpClientHandler handler = new() {
+				AllowAutoRedirect = args.Item1,
+				AutomaticDecompression = args.Item2,
+				CookieContainer = args.Item3,
+			};
+			if (args.Item4 != null) {
+				handler.Proxy = args.Item4;
+				handler.UseProxy = true;
+			}
+			if (args.Item5.HasValue) {
+				handler.MaxConnectionsPerServer = args.Item5.Value;
+			}
+			return handler;
+		}
+
+#if NETCOREAPP
+		public static SocketsHttpHandler GenerateSocketsHttpHandler(GenerateHttpHandlerArgs args) {
+			SocketsHttpHandler handler = new() {
+				AllowAutoRedirect = args.Item1,
+				AutomaticDecompression = args.Item2,
+				CookieContainer = args.Item3,
+			};
+			if (args.Item4 != null) {
+				handler.Proxy = args.Item4;
+				handler.UseProxy = true;
+			}
+			if (args.Item5.HasValue) {
+				handler.MaxConnectionsPerServer = args.Item5.Value;
+			}
+			return handler;
+		}
+#endif
+
+		private static HttpMessageHandler GenerateHttpHandler(GenerateHttpHandlerArgs args) {
+			HttpMessageHandler? handler = GenerateHttpHandlerDelegate?.Invoke(args);
+			if (handler != null) {
+				return handler;
+			}
+#if NETCOREAPP
+			if (SocketsHttpHandler.IsSupported) {
+				return GenerateSocketsHttpHandler(args);
+			}
+#endif
+			return GenerateHttpHandler<HttpClientHandler>(args);
+		}
 
 		internal WebBrowser(ArchiLogger archiLogger, IWebProxy? webProxy = null, bool extendedTimeout = false) {
 			ArchiLogger = archiLogger ?? throw new ArgumentNullException(nameof(archiLogger));
 
-			HttpClientHandler = new HttpClientHandler {
-				AllowAutoRedirect = false, // This must be false if we want to handle custom redirection schemes such as "steammobile://"
-
-#if !__IOS__
+			GenerateHttpHandlerArgs args = (false, // This must be false if we want to handle custom redirection schemes such as "steammobile://"
 #if NETFRAMEWORK || NETSTANDARD
-				AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
+				DecompressionMethods.Deflate | DecompressionMethods.GZip,
 #else
-				AutomaticDecompression = DecompressionMethods.All,
+				DecompressionMethods.All,
 #endif
-#endif
+				CookieContainer,
+				webProxy,
+				StaticHelpers.IsRunningOnMono ? null : MaxConnections);
 
-				CookieContainer = CookieContainer
-			};
-
-#if !__IOS__
-			if (webProxy != null) {
-				HttpClientHandler.Proxy = webProxy;
-				HttpClientHandler.UseProxy = true;
-			}
-#endif
-
-#if !__IOS__
-			if (!StaticHelpers.IsRunningOnMono) {
-				HttpClientHandler.MaxConnectionsPerServer = MaxConnections;
-			}
-#endif
+			HttpClientHandler = GenerateHttpHandler(args);
 
 			HttpClient = GenerateDisposableHttpClient(extendedTimeout);
 		}

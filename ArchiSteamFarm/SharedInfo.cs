@@ -29,7 +29,16 @@ using JetBrains.Annotations;
 namespace ArchiSteamFarm {
 	public static class SharedInfo {
 		[PublicAPI]
+
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		public static readonly string ConfigDirectory = HomeDirectory + Path.DirectorySeparatorChar + "config";
+		internal static readonly string PluginsDirectory = HomeDirectory + Path.DirectorySeparatorChar + "plugins";
+		internal static readonly string DebugDirectory = HomeDirectory + Path.DirectorySeparatorChar + "debug";
+#else
 		public const string ConfigDirectory = "config";
+		internal const string PluginsDirectory = "plugins";
+		internal const string DebugDirectory = "debug";
+#endif
 
 		internal const ulong ArchiSteamID = 76561198006963719;
 		internal const string ArchivalLogFile = "log.{#}.txt";
@@ -39,7 +48,6 @@ namespace ArchiSteamFarm {
 		internal const string AssemblyDocumentation = AssemblyName + ".xml";
 		internal const string AssemblyName = nameof(ArchiSteamFarm);
 		internal const string DatabaseExtension = ".db";
-		internal const string DebugDirectory = "debug";
 		internal const string EnvironmentVariableCryptKey = ASF + "_CRYPTKEY";
 		internal const string EnvironmentVariableNetworkGroup = ASF + "_NETWORK_GROUP";
 		internal const string EnvironmentVariablePath = ASF + "_PATH";
@@ -57,7 +65,6 @@ namespace ArchiSteamFarm {
 		internal const string LicenseURL = "http://www.apache.org/licenses/LICENSE-2.0";
 		internal const string LogFile = "log.txt";
 		internal const string MobileAuthenticatorExtension = ".maFile";
-		internal const string PluginsDirectory = "plugins";
 		internal const string ProjectURL = "https://github.com/" + GithubRepo;
 		internal const string SentryHashExtension = ".bin";
 		internal const string StatisticsServer = "asf.justarchi.net";

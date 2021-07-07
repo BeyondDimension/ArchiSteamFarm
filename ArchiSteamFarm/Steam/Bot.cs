@@ -225,7 +225,11 @@ namespace ArchiSteamFarm.Steam {
 		private string? AuthCode;
 
 		[JsonProperty]
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		public string? AvatarHash { get; set; }
+#else
 		private string? AvatarHash;
+#endif
 
 		private Timer? ConnectionFailureTimer;
 		private bool FirstTradeSent;

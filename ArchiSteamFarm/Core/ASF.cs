@@ -976,13 +976,16 @@ namespace ArchiSteamFarm.Core {
 						}
 
 						break;
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 					case SharedInfo.ArchivalLogsDirectory:
 					case SharedInfo.ConfigDirectory:
 					case SharedInfo.DebugDirectory:
 					case SharedInfo.PluginsDirectory:
 					case SharedInfo.UpdateDirectory:
-						// Files in those directories we want to keep in their current place
-						continue;
+					
+					// Files in those directories we want to keep in their current place
+					continue;
+#endif
 					default:
 						// Files in subdirectories of those directories we want to keep as well
 						if (Utilities.RelativeDirectoryStartsWith(relativeDirectoryName, SharedInfo.ArchivalLogsDirectory, SharedInfo.ConfigDirectory, SharedInfo.DebugDirectory, SharedInfo.PluginsDirectory, SharedInfo.UpdateDirectory)) {

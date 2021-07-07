@@ -54,6 +54,10 @@ namespace ArchiSteamFarm.NLog {
 		private static bool IsUsingCustomConfiguration;
 		private static bool IsWaitingForUserInput;
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		public static Func<bool, Task<string>>? GetUserInputFunc { get; set; }
+#endif
+
 		internal static void EnableTraceLogging() {
 			if (IsUsingCustomConfiguration || (LogManager.Configuration == null)) {
 				return;
@@ -96,29 +100,50 @@ namespace ArchiSteamFarm.NLog {
 				try {
 					switch (userInputType) {
 						case ASF.EUserInputType.Login:
+#if EMBEDDED_IN_STEAMPLUSPLUS
+							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamLogin, botName));
+							result = await GetUserInputFunc?.Invoke(false);
+#else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamLogin, botName));
 							result = ConsoleReadLine();
+#endif
 
 							break;
 						case ASF.EUserInputType.Password:
+#if EMBEDDED_IN_STEAMPLUSPLUS
+							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamPassword, botName));
+							result = await GetUserInputFunc?.Invoke(true);
+#else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamPassword, botName));
 							result = ConsoleReadLineMasked();
-
+#endif
 							break;
 						case ASF.EUserInputType.SteamGuard:
+#if EMBEDDED_IN_STEAMPLUSPLUS
+							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamGuard, botName));
+							result = await GetUserInputFunc?.Invoke(false);
+#else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamGuard, botName));
 							result = ConsoleReadLine();
-
+#endif
 							break;
 						case ASF.EUserInputType.SteamParentalCode:
+#if EMBEDDED_IN_STEAMPLUSPLUS
+							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamParentalCode, botName));
+							result = await GetUserInputFunc?.Invoke(true);
+#else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamParentalCode, botName));
 							result = ConsoleReadLineMasked();
-
+#endif
 							break;
 						case ASF.EUserInputType.TwoFactorAuthentication:
+#if EMBEDDED_IN_STEAMPLUSPLUS
+							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteam2FA, botName));
+							result = await GetUserInputFunc?.Invoke(false);
+#else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteam2FA, botName));
 							result = ConsoleReadLine();
-
+#endif
 							break;
 						default:
 							ASF.ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.WarningUnknownValuePleaseReport, nameof(userInputType), userInputType));

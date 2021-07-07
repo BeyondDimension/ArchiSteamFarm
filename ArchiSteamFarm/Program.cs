@@ -62,9 +62,10 @@ namespace ArchiSteamFarm {
 			if (exitCode != 0) {
 				ASF.ArchiLogger.LogGenericError(Strings.ErrorExitingWithNonZeroErrorCode);
 			}
-
 			await Shutdown(exitCode).ConfigureAwait(false);
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 			Environment.Exit(exitCode);
+#endif
 		}
 
 		internal static async Task Restart() {
@@ -80,6 +81,7 @@ namespace ArchiSteamFarm {
 
 			IEnumerable<string> arguments = Environment.GetCommandLineArgs().Skip(executableName.Equals(SharedInfo.AssemblyName, StringComparison.Ordinal) ? 1 : 0);
 
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 			try {
 				Process.Start(OS.ProcessFileName, string.Join(" ", arguments));
 			} catch (Exception e) {
@@ -91,6 +93,7 @@ namespace ArchiSteamFarm {
 
 			ShutdownResetEvent.TrySetResult(0);
 			Environment.Exit(0);
+#endif
 		}
 
 		private static void HandleCryptKeyArgument(string cryptKey) {

@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK || NETSTANDARD
+#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -41,7 +41,7 @@ namespace ArchiSteamFarm.Compatibility {
 		private static readonly DateTime SavedProcessStartTime = DateTime.UtcNow;
 #endif
 
-#if NETFRAMEWORK || NETSTANDARD
+#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
 		public static bool IsRunningOnMono => Type.GetType("Mono.Runtime") != null;
 #else
 		public static bool IsRunningOnMono => false;
@@ -61,15 +61,7 @@ namespace ArchiSteamFarm.Compatibility {
 			}
 		}
 
-#if NETFRAMEWORK || NETSTANDARD
-		public static Task<byte[]> ComputeHashAsync(this HashAlgorithm hashAlgorithm, Stream inputStream) {
-			if (hashAlgorithm == null) {
-				throw new ArgumentNullException(nameof(hashAlgorithm));
-			}
-
-			return Task.FromResult(hashAlgorithm.ComputeHash(inputStream));
-		}
-
+#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
 		public static IWebHostBuilder ConfigureWebHostDefaults(this IWebHostBuilder builder, Action<IWebHostBuilder> configure) {
 			if (configure == null) {
 				throw new ArgumentNullException(nameof(configure));
@@ -78,6 +70,16 @@ namespace ArchiSteamFarm.Compatibility {
 			configure(builder);
 
 			return builder;
+		}
+#endif
+
+#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
+		public static Task<byte[]> ComputeHashAsync(this HashAlgorithm hashAlgorithm, Stream inputStream) {
+			if (hashAlgorithm == null) {
+				throw new ArgumentNullException(nameof(hashAlgorithm));
+			}
+
+			return Task.FromResult(hashAlgorithm.ComputeHash(inputStream));
 		}
 
 		public static bool Contains(this string input, string value, StringComparison comparisonType) {

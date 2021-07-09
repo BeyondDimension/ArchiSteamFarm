@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK || NETSTANDARD
+#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
 using ArchiSteamFarm.Compatibility;
 using File = System.IO.File;
 using Path = System.IO.Path;
@@ -45,7 +45,7 @@ namespace ArchiSteamFarm.IPC {
 	internal static class ArchiKestrel {
 		internal static HistoryTarget? HistoryTarget { get; private set; }
 
-#if NETFRAMEWORK || NETSTANDARD
+#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
 		private static IWebHost? KestrelWebHost;
 #else
 		private static IHost? KestrelWebHost;
@@ -71,7 +71,7 @@ namespace ArchiSteamFarm.IPC {
 			ASF.ArchiLogger.LogGenericInfo(Strings.IPCStarting);
 
 			// The order of dependency injection matters, pay attention to it
-#if NETFRAMEWORK || NETSTANDARD
+#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
 			WebHostBuilder builder = new();
 #else
 			HostBuilder builder = new();
@@ -144,7 +144,7 @@ namespace ArchiSteamFarm.IPC {
 			Logging.InitHistoryLogger();
 
 			// Start the server
-#if NETFRAMEWORK || NETSTANDARD
+#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
 			IWebHost? kestrelWebHost = null;
 #else
 			IHost? kestrelWebHost = null;

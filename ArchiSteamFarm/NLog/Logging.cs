@@ -102,7 +102,7 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.Login:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamLogin, botName));
-							result = await GetUserInputFunc?.Invoke(false);
+							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(false).ConfigureAwait(false) : null;
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamLogin, botName));
 							result = ConsoleReadLine();
@@ -112,7 +112,7 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.Password:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamPassword, botName));
-							result = await GetUserInputFunc?.Invoke(true);
+							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(true).ConfigureAwait(false) : null;
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamPassword, botName));
 							result = ConsoleReadLineMasked();
@@ -121,7 +121,7 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.SteamGuard:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamGuard, botName));
-							result = await GetUserInputFunc?.Invoke(false);
+							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(false).ConfigureAwait(false) : null;
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamGuard, botName));
 							result = ConsoleReadLine();
@@ -130,7 +130,7 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.SteamParentalCode:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamParentalCode, botName));
-							result = await GetUserInputFunc?.Invoke(true);
+							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(true).ConfigureAwait(false) : null;
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamParentalCode, botName));
 							result = ConsoleReadLineMasked();
@@ -139,7 +139,7 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.TwoFactorAuthentication:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteam2FA, botName));
-							result = await GetUserInputFunc?.Invoke(false);
+							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(false).ConfigureAwait(false) : null;
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteam2FA, botName));
 							result = ConsoleReadLine();

@@ -56,6 +56,7 @@ namespace ArchiSteamFarm.NLog {
 
 #if EMBEDDED_IN_STEAMPLUSPLUS
 		public static Func<bool, Task<string>>? GetUserInputFunc { get; set; }
+		public static bool IsReadInputing { get; set; }
 #endif
 
 		internal static void EnableTraceLogging() {
@@ -102,17 +103,16 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.Login:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamLogin, botName));
-							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(false).ConfigureAwait(false) : null;
+							result = await ConsoleShellReadLine(false).ConfigureAwait(false);
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamLogin, botName));
 							result = ConsoleReadLine();
 #endif
-
 							break;
 						case ASF.EUserInputType.Password:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamPassword, botName));
-							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(true).ConfigureAwait(false) : null;
+							result = await ConsoleShellReadLine(true).ConfigureAwait(false);
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamPassword, botName));
 							result = ConsoleReadLineMasked();
@@ -121,7 +121,7 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.SteamGuard:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamGuard, botName));
-							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(false).ConfigureAwait(false) : null;
+							result = await ConsoleShellReadLine(false).ConfigureAwait(false);
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamGuard, botName));
 							result = ConsoleReadLine();
@@ -130,7 +130,7 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.SteamParentalCode:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamParentalCode, botName));
-							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(true).ConfigureAwait(false) : null;
+							result = await ConsoleShellReadLine(true).ConfigureAwait(false);
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamParentalCode, botName));
 							result = ConsoleReadLineMasked();
@@ -139,7 +139,7 @@ namespace ArchiSteamFarm.NLog {
 						case ASF.EUserInputType.TwoFactorAuthentication:
 #if EMBEDDED_IN_STEAMPLUSPLUS
 							ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteam2FA, botName));
-							result = GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(false).ConfigureAwait(false) : null;
+							result = await ConsoleShellReadLine(false).ConfigureAwait(false);
 #else
 							Console.Write(Bot.FormatBotResponse(Strings.UserInputSteam2FA, botName));
 							result = ConsoleReadLine();
@@ -282,6 +282,22 @@ namespace ArchiSteamFarm.NLog {
 				Console.Beep();
 			}
 		}
+
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		private static async Task<string?> ConsoleShellReadLine(bool isMask) {
+			using CancellationTokenSource cts = new();
+
+			try {
+				CancellationToken token = cts.Token;
+				Utilities.InBackground(() => BeepUntilCanceled(token));
+				IsReadInputing = !cts.IsCancellationRequested;
+				return GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(isMask).ConfigureAwait(false) : null;
+			} finally {
+				cts.Cancel();
+				IsReadInputing = !cts.IsCancellationRequested;
+			}
+		}
+#endif
 
 		private static string? ConsoleReadLine() {
 			using CancellationTokenSource cts = new();

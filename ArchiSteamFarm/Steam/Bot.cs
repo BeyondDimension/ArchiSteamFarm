@@ -1843,11 +1843,15 @@ namespace ArchiSteamFarm.Steam {
 			TimeSpan timeSpan = TimeSpan.FromMilliseconds(CallbackSleep);
 
 			while (KeepRunning || SteamClient.IsConnected) {
+#if EMBEDDED_IN_STEAMPLUSPLUS
+				if (Logging.IsReadInputing) {
+					continue;
+				}
+#endif
 				if (!CallbackSemaphore.Wait(0)) {
 					if (Debugging.IsUserDebugging) {
 						ArchiLogger.LogGenericDebug(string.Format(CultureInfo.CurrentCulture, Strings.WarningFailedWithError, nameof(CallbackSemaphore)));
 					}
-
 					return;
 				}
 

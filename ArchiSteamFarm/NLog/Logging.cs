@@ -288,8 +288,9 @@ namespace ArchiSteamFarm.NLog {
 			using CancellationTokenSource cts = new();
 
 			try {
-				CancellationToken token = cts.Token;
-				Utilities.InBackground(() => BeepUntilCanceled(token));
+				//CancellationToken token = cts.Token;
+				//是否定时响起蜂鸣器提示音
+				//Utilities.InBackground(() => BeepUntilCanceled(token));
 				IsReadInputing = !cts.IsCancellationRequested;
 				return GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(isMask).ConfigureAwait(false) : null;
 			} finally {

@@ -227,6 +227,8 @@ namespace ArchiSteamFarm.Steam {
 		[JsonProperty]
 #if EMBEDDED_IN_STEAMPLUSPLUS
 		public string? AvatarHash { get; set; }
+
+		public string? AvatarUrl { get; set; }
 #else
 		private string? AvatarHash;
 #endif
@@ -1844,7 +1846,7 @@ namespace ArchiSteamFarm.Steam {
 
 			while (KeepRunning || SteamClient.IsConnected) {
 #if EMBEDDED_IN_STEAMPLUSPLUS
-				if (Logging.IsReadInputing) {
+				if (Logging.IsWaitingForUserInput) {
 					continue;
 				}
 #endif
@@ -2312,6 +2314,10 @@ namespace ArchiSteamFarm.Steam {
 
 					break;
 				case EResult.InvalidPassword:
+					BotConfig.DecryptedSteamPassword = null;
+					await Task.Delay(5000).ConfigureAwait(false);
+
+					break;
 				case EResult.NoConnection:
 				case EResult.ServiceUnavailable:
 				case EResult.Timeout:

@@ -52,11 +52,10 @@ namespace ArchiSteamFarm.NLog {
 		private static string Backspace => "\b \b";
 
 		private static bool IsUsingCustomConfiguration;
-		private static bool IsWaitingForUserInput;
+		public static bool IsWaitingForUserInput;
 
 #if EMBEDDED_IN_STEAMPLUSPLUS
 		public static Func<bool, Task<string>>? GetUserInputFunc { get; set; }
-		public static bool IsReadInputing { get; set; }
 #endif
 
 		internal static void EnableTraceLogging() {
@@ -291,11 +290,9 @@ namespace ArchiSteamFarm.NLog {
 				//CancellationToken token = cts.Token;
 				//是否定时响起蜂鸣器提示音
 				//Utilities.InBackground(() => BeepUntilCanceled(token));
-				IsReadInputing = !cts.IsCancellationRequested;
 				return GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(isMask).ConfigureAwait(false) : null;
 			} finally {
 				cts.Cancel();
-				IsReadInputing = !cts.IsCancellationRequested;
 			}
 		}
 #endif

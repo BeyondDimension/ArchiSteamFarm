@@ -147,7 +147,12 @@ namespace ArchiSteamFarm {
 			}
 		}
 
-		private static async Task<bool> InitASF() {
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		internal
+#else
+		private
+#endif
+			static async Task<bool> InitASF() {
 			if (!await InitGlobalConfigAndLanguage().ConfigureAwait(false)) {
 				return false;
 			}
@@ -167,7 +172,12 @@ namespace ArchiSteamFarm {
 			return true;
 		}
 
-		private static async Task<bool> InitCore(IReadOnlyCollection<string>? args) {
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		internal
+#else
+		private
+#endif
+			static async Task<bool> InitCore(IReadOnlyCollection<string>? args) {
 #if !EMBEDDED_IN_STEAMPLUSPLUS
 			Directory.SetCurrentDirectory(SharedInfo.HomeDirectory);
 

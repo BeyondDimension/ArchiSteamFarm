@@ -60,6 +60,7 @@
 		<PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" />
 		<PackageReference Include="System.Composition" />
 		<PackageReference Include="System.Linq.Async" />
+		<PackageReference Include="ReactiveUI" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' != 'net48'">

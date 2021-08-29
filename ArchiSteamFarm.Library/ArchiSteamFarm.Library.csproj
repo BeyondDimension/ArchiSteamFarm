@@ -61,6 +61,7 @@
 		<PackageReference Include="System.Composition" />
 		<PackageReference Include="System.Linq.Async" />
 		<PackageReference Include="ReactiveUI" />
+		<PackageReference Include="OperatingSystem2" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' != 'net48'">

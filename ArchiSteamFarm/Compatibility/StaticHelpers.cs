@@ -41,7 +41,9 @@ namespace ArchiSteamFarm.Compatibility {
 		private static readonly DateTime SavedProcessStartTime = DateTime.UtcNow;
 #endif
 
-#if NETFRAMEWORK || NETSTANDARD || EMBEDDED_IN_STEAMPLUSPLUS
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		public static bool IsRunningOnMono => OperatingSystem2.IsRunningOnMono;
+#elif NETFRAMEWORK || NETSTANDARD
 		public static bool IsRunningOnMono => Type.GetType("Mono.Runtime") != null;
 #else
 		public static bool IsRunningOnMono => false;

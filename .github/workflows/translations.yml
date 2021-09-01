@@ -10,9 +10,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v2.3.4
       with:
         submodules: recursive
+        token: ${{ secrets.ARCHIBOT_GITHUB_TOKEN }}
 
     - name: Reset wiki to follow origin
       shell: sh
@@ -25,7 +26,7 @@ jobs:
         git reset --hard origin/master
 
     - name: Download latest translations from Crowdin
-      uses: crowdin/github-action@1.1.0
+      uses: crowdin/github-action@1.3.3
       with:
         upload_sources: false
         download_translations: true
@@ -36,13 +37,13 @@ jobs:
         project_id: ${{ secrets.ASF_CROWDIN_PROJECT_ID }}
         token: ${{ secrets.ASF_CROWDIN_API_TOKEN }}
 
-    - name: Import GPG key for wiki
-      uses: crazy-max/ghaction-import-gpg@v3
+    - name: Import GPG key for signing
+      uses: crazy-max/ghaction-import-gpg@v3.2.0
       with:
         gpg-private-key: ${{ secrets.ARCHIBOT_GPG_PRIVATE_KEY }}
+        git-config-global: true
         git-user-signingkey: true
         git-commit-gpgsign: true
-        workdir: wiki
 
     - name: Commit the changes to wiki
       shell: sh
@@ -58,19 +59,12 @@ jobs:
         fi
 
     - name: Push changes to wiki
-      uses: ad-m/github-push-action@master
+      uses: ad-m/github-push-action@v0.6.0
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.ARCHIBOT_GITHUB_TOKEN }}
         branch: master
         directory: wiki
         repository: ${{ github.repository }}.wiki
-
-    - name: Import GPG key for ASF
-      uses: crazy-max/ghaction-import-gpg@v3
-      with:
-        gpg-private-key: ${{ secrets.ARCHIBOT_GPG_PRIVATE_KEY }}
-        git-user-signingkey: true
-        git-commit-gpgsign: true
 
     - name: Commit the changes to ASF
       shell: sh
@@ -84,7 +78,7 @@ jobs:
         fi
 
     - name: Push changes to ASF
-      uses: ad-m/github-push-action@master
+      uses: ad-m/github-push-action@v0.6.0
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.ARCHIBOT_GITHUB_TOKEN }}
         branch: ${{ github.ref }}

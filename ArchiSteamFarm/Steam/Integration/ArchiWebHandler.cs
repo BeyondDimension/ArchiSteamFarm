@@ -20,7 +20,7 @@
 // limitations under the License.
 
 #if NETFRAMEWORK
-using ArchiSteamFarm.Compatibility;
+using JustArchiNET.Madness;
 #endif
 using System;
 using System.Collections.Concurrent;
@@ -34,7 +34,6 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using AngleSharp.Dom;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Helpers;
@@ -50,7 +49,6 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SteamKit2;
-using Formatting = Newtonsoft.Json.Formatting;
 
 namespace ArchiSteamFarm.Steam.Integration {
 	public sealed class ArchiWebHandler : IDisposable {
@@ -58,7 +56,6 @@ namespace ArchiSteamFarm.Steam.Integration {
 
 		private const string EconService = "IEconService";
 		private const string LoyaltyRewardsService = "ILoyaltyRewardsService";
-		private const string PlayerService = "IPlayerService";
 		private const string SteamAppsService = "ISteamApps";
 		private const string SteamUserAuthService = "ISteamUserAuth";
 		private const string TwoFactorService = "ITwoFactorService";
@@ -255,130 +252,6 @@ namespace ArchiSteamFarm.Steam.Integration {
 		}
 
 		[PublicAPI]
-		public async Task<Dictionary<uint, string>?> GetMyOwnedGames() {
-			Uri request = new(SteamCommunityURL, "/my/games?l=english&xml=1");
-
-			XmlDocumentResponse? response = await UrlGetToXmlDocumentWithSession(request, checkSessionPreemptively: false).ConfigureAwait(false);
-
-			using XmlNodeList? xmlNodeList = response?.Content.SelectNodes("gamesList/games/game");
-
-			if ((xmlNodeList == null) || (xmlNodeList.Count == 0)) {
-				return null;
-			}
-
-			Dictionary<uint, string> result = new(xmlNodeList.Count);
-
-			foreach (XmlNode? xmlNode in xmlNodeList) {
-				if (xmlNode == null) {
-					ASF.ArchiLogger.LogNullError(nameof(xmlNode));
-
-					return null;
-				}
-
-				XmlNode? appNode = xmlNode.SelectSingleNode("appID");
-
-				if (appNode == null) {
-					Bot.ArchiLogger.LogNullError(nameof(appNode));
-
-					return null;
-				}
-
-				if (!uint.TryParse(appNode.InnerText, out uint appID) || (appID == 0)) {
-					Bot.ArchiLogger.LogNullError(nameof(appID));
-
-					return null;
-				}
-
-				XmlNode? nameNode = xmlNode.SelectSingleNode("name");
-
-				if (nameNode == null) {
-					Bot.ArchiLogger.LogNullError(nameof(nameNode));
-
-					return null;
-				}
-
-				result[appID] = nameNode.InnerText;
-			}
-
-			return result;
-		}
-
-		[PublicAPI]
-		public async Task<Dictionary<uint, string>?> GetOwnedGames(ulong steamID) {
-			if ((steamID == 0) || !new SteamID(steamID).IsIndividualAccount) {
-				throw new ArgumentOutOfRangeException(nameof(steamID));
-			}
-
-			(bool success, string? steamApiKey) = await CachedApiKey.GetValue().ConfigureAwait(false);
-
-			if (!success || string.IsNullOrEmpty(steamApiKey)) {
-				return null;
-			}
-
-			// Extra entry for format
-			Dictionary<string, object> arguments = new(5, StringComparer.Ordinal) {
-				{ "include_appinfo", 1 },
-				{ "key", steamApiKey! },
-				{ "skip_unvetted_apps", "0" },
-				{ "steamid", steamID }
-			};
-
-			KeyValue? response = null;
-
-			for (byte i = 0; (i < WebBrowser.MaxTries) && (response == null); i++) {
-				using WebAPI.AsyncInterface playerService = Bot.SteamConfiguration.GetAsyncWebAPIInterface(PlayerService);
-
-				playerService.Timeout = WebBrowser.Timeout;
-
-				try {
-					response = await WebLimitRequest(
-						WebAPI.DefaultBaseAddress,
-
-						// TODO: Remove this ToDictionary() call after https://github.com/SteamRE/SteamKit/pull/992 is released
-						// ReSharper disable once AccessToDisposedClosure
-						async () => await playerService.CallAsync(HttpMethod.Get, "GetOwnedGames", args: arguments.ToDictionary(kv => kv.Key, kv => kv.Value)).ConfigureAwait(false)
-					).ConfigureAwait(false);
-				} catch (TaskCanceledException e) {
-					Bot.ArchiLogger.LogGenericDebuggingException(e);
-				} catch (Exception e) {
-					Bot.ArchiLogger.LogGenericWarningException(e);
-				}
-			}
-
-			if (response == null) {
-				Bot.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.ErrorRequestFailedTooManyTimes, WebBrowser.MaxTries));
-
-				return null;
-			}
-
-			List<KeyValue> games = response["games"].Children;
-
-			Dictionary<uint, string> result = new(games.Count);
-
-			foreach (KeyValue game in games) {
-				uint appID = game["appid"].AsUnsignedInteger();
-
-				if (appID == 0) {
-					Bot.ArchiLogger.LogNullError(nameof(appID));
-
-					return null;
-				}
-
-				string? gameName = game["name"].AsString();
-
-				if (string.IsNullOrEmpty(gameName)) {
-					Bot.ArchiLogger.LogNullError(nameof(gameName));
-
-					return null;
-				}
-
-				result[appID] = gameName!;
-			}
-
-			return result;
-		}
-
-		[PublicAPI]
 		public async Task<uint?> GetPointsBalance() {
 			(bool success, string? accessToken) = await CachedAccessToken.GetValue().ConfigureAwait(false);
 
@@ -388,7 +261,9 @@ namespace ArchiSteamFarm.Steam.Integration {
 
 			// Extra entry for format
 			Dictionary<string, object> arguments = new(3, StringComparer.Ordinal) {
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				{ "access_token", accessToken! },
+
 				{ "steamid", Bot.SteamID }
 			};
 
@@ -403,9 +278,8 @@ namespace ArchiSteamFarm.Steam.Integration {
 					response = await WebLimitRequest(
 						WebAPI.DefaultBaseAddress,
 
-						// TODO: Remove this ToDictionary() call after https://github.com/SteamRE/SteamKit/pull/992 is released
 						// ReSharper disable once AccessToDisposedClosure
-						async () => await loyaltyRewardsService.CallAsync(HttpMethod.Get, "GetSummary", args: arguments.ToDictionary(kv => kv.Key, kv => kv.Value)).ConfigureAwait(false)
+						async () => await loyaltyRewardsService.CallAsync(HttpMethod.Get, "GetSummary", args: arguments).ConfigureAwait(false)
 					).ConfigureAwait(false);
 				} catch (TaskCanceledException e) {
 					Bot.ArchiLogger.LogGenericDebuggingException(e);
@@ -541,7 +415,7 @@ namespace ArchiSteamFarm.Steam.Integration {
 						}
 
 						// This is actually client error with a reason, so it doesn't make sense to retry
-						Bot.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.WarningFailedWithError, response.Content!.ErrorText));
+						Bot.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.WarningFailedWithError, response.Content.ErrorText));
 
 						return (false, mobileTradeOfferIDs);
 					}
@@ -719,6 +593,7 @@ namespace ArchiSteamFarm.Steam.Integration {
 			return response;
 		}
 
+		[Obsolete("ASF no longer uses any XML-related functions, re-implement it yourself if needed.")]
 		[PublicAPI]
 		public async Task<XmlDocumentResponse?> UrlGetToXmlDocumentWithSession(Uri request, IReadOnlyCollection<KeyValuePair<string, string>>? headers = null, Uri? referer = null, WebBrowser.ERequestOptions requestOptions = WebBrowser.ERequestOptions.None, bool checkSessionPreemptively = true, byte maxTries = WebBrowser.MaxTries) {
 			if (request == null) {
@@ -944,8 +819,10 @@ namespace ArchiSteamFarm.Steam.Integration {
 				};
 
 				if (data != null) {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					data[sessionName] = sessionID!;
 				} else {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					data = new Dictionary<string, string>(1, StringComparer.Ordinal) { { sessionName, sessionID! } };
 				}
 			}
@@ -1048,8 +925,10 @@ namespace ArchiSteamFarm.Steam.Integration {
 				};
 
 				if (data != null) {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					data[sessionName] = sessionID!;
 				} else {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					data = new Dictionary<string, string>(1, StringComparer.Ordinal) { { sessionName, sessionID! } };
 				}
 			}
@@ -1151,6 +1030,7 @@ namespace ArchiSteamFarm.Steam.Integration {
 					_ => throw new ArgumentOutOfRangeException(nameof(session))
 				};
 
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				KeyValuePair<string, string> sessionValue = new(sessionName, sessionID!);
 
 				if (data != null) {
@@ -1259,8 +1139,10 @@ namespace ArchiSteamFarm.Steam.Integration {
 				};
 
 				if (data != null) {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					data[sessionName] = sessionID!;
 				} else {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					data = new Dictionary<string, string>(1, StringComparer.Ordinal) { { sessionName, sessionID! } };
 				}
 			}
@@ -1316,16 +1198,14 @@ namespace ArchiSteamFarm.Steam.Integration {
 				return await function().ConfigureAwait(false);
 			}
 
-			if (!ASF.WebLimitingSemaphores.TryGetValue(service, out (ICrossProcessSemaphore RateLimitingSemaphore, SemaphoreSlim? OpenConnectionsSemaphore) limiters)) {
+			if (!ASF.WebLimitingSemaphores.TryGetValue(service, out (ICrossProcessSemaphore RateLimitingSemaphore, SemaphoreSlim OpenConnectionsSemaphore) limiters)) {
 				ASF.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.WarningUnknownValuePleaseReport, nameof(service), service));
 
 				limiters.RateLimitingSemaphore = ASF.RateLimitingSemaphore;
 			}
 
 			// Sending a request opens a new connection
-			if (limiters.OpenConnectionsSemaphore != null) {
-				await limiters.OpenConnectionsSemaphore.WaitAsync().ConfigureAwait(false);
-			}
+			await limiters.OpenConnectionsSemaphore.WaitAsync().ConfigureAwait(false);
 
 			try {
 				// It also increases number of requests
@@ -1342,7 +1222,7 @@ namespace ArchiSteamFarm.Steam.Integration {
 				return await function().ConfigureAwait(false);
 			} finally {
 				// We release open connections semaphore only once we're indeed done sending a particular request
-				limiters.OpenConnectionsSemaphore?.Release();
+				limiters.OpenConnectionsSemaphore.Release();
 			}
 		}
 
@@ -1406,7 +1286,7 @@ namespace ArchiSteamFarm.Steam.Integration {
 					}
 
 					// This is actually client error with a reason, so it doesn't make sense to retry
-					Bot.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.WarningFailedWithError, response.Content!.ErrorText));
+					Bot.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.WarningFailedWithError, response.Content.ErrorText));
 
 					return (false, false);
 				}
@@ -1495,7 +1375,9 @@ namespace ArchiSteamFarm.Steam.Integration {
 
 			// Extra entry for format
 			Dictionary<string, object> arguments = new(3, StringComparer.Ordinal) {
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				{ "key", steamApiKey! },
+
 				{ "tradeofferid", tradeID }
 			};
 
@@ -1510,9 +1392,8 @@ namespace ArchiSteamFarm.Steam.Integration {
 					response = await WebLimitRequest(
 						WebAPI.DefaultBaseAddress,
 
-						// TODO: Remove this ToDictionary() call after https://github.com/SteamRE/SteamKit/pull/992 is released
 						// ReSharper disable once AccessToDisposedClosure
-						async () => await econService.CallAsync(HttpMethod.Post, "DeclineTradeOffer", args: arguments.ToDictionary(kv => kv.Key, kv => kv.Value)).ConfigureAwait(false)
+						async () => await econService.CallAsync(HttpMethod.Post, "DeclineTradeOffer", args: arguments).ConfigureAwait(false)
 					).ConfigureAwait(false);
 				} catch (TaskCanceledException e) {
 					Bot.ArchiLogger.LogGenericDebuggingException(e);
@@ -1555,7 +1436,10 @@ namespace ArchiSteamFarm.Steam.Integration {
 				{ "active_only", 1 },
 				{ "get_descriptions", 1 },
 				{ "get_received_offers", 1 },
+
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				{ "key", steamApiKey! },
+
 				{ "time_historical_cutoff", uint.MaxValue }
 			};
 
@@ -1570,9 +1454,8 @@ namespace ArchiSteamFarm.Steam.Integration {
 					response = await WebLimitRequest(
 						WebAPI.DefaultBaseAddress,
 
-						// TODO: Remove this ToDictionary() call after https://github.com/SteamRE/SteamKit/pull/992 is released
 						// ReSharper disable once AccessToDisposedClosure
-						async () => await econService.CallAsync(HttpMethod.Get, "GetTradeOffers", args: arguments.ToDictionary(kv => kv.Key, kv => kv.Value)).ConfigureAwait(false)
+						async () => await econService.CallAsync(HttpMethod.Get, "GetTradeOffers", args: arguments).ConfigureAwait(false)
 					).ConfigureAwait(false);
 				} catch (TaskCanceledException e) {
 					Bot.ArchiLogger.LogGenericDebuggingException(e);
@@ -1645,7 +1528,8 @@ namespace ArchiSteamFarm.Steam.Integration {
 							return null;
 						}
 
-						parsedTags.Add(new Tag(identifier!, value!));
+						// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
+						parsedTags.Add(new Tag(identifier!, value));
 					}
 
 					parsedDescription.Tags = parsedTags.ToImmutableHashSet();
@@ -2040,11 +1924,14 @@ namespace ArchiSteamFarm.Steam.Integration {
 
 			// Extra entry for format
 			Dictionary<string, object> arguments = new(!string.IsNullOrEmpty(tradeToken) ? 4 : 3, StringComparer.Ordinal) {
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				{ "key", steamApiKey! },
+
 				{ "steamid_target", steamID }
 			};
 
 			if (!string.IsNullOrEmpty(tradeToken)) {
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				arguments["trade_offer_access_token"] = tradeToken!;
 			}
 
@@ -2059,9 +1946,8 @@ namespace ArchiSteamFarm.Steam.Integration {
 					response = await WebLimitRequest(
 						WebAPI.DefaultBaseAddress,
 
-						// TODO: Remove this ToDictionary() call after https://github.com/SteamRE/SteamKit/pull/992 is released
 						// ReSharper disable once AccessToDisposedClosure
-						async () => await econService.CallAsync(HttpMethod.Get, "GetTradeHoldDurations", args: arguments.ToDictionary(kv => kv.Key, kv => kv.Value)).ConfigureAwait(false)
+						async () => await econService.CallAsync(HttpMethod.Get, "GetTradeHoldDurations", args: arguments).ConfigureAwait(false)
 					).ConfigureAwait(false);
 				} catch (TaskCanceledException e) {
 					Bot.ArchiLogger.LogGenericDebuggingException(e);
@@ -2452,7 +2338,7 @@ namespace ArchiSteamFarm.Steam.Integration {
 				return (ESteamApiKeyState.AccessDenied, null);
 			}
 
-			IElement? htmlNode = response!.Content!.SelectSingleNode("//div[@id='bodyContents_ex']/p");
+			IElement? htmlNode = response.Content.SelectSingleNode("//div[@id='bodyContents_ex']/p");
 
 			if (htmlNode == null) {
 				Bot.ArchiLogger.LogNullError(nameof(htmlNode));
@@ -2705,6 +2591,7 @@ namespace ArchiSteamFarm.Steam.Integration {
 
 			ObjectResponse<AccessTokenResponse>? response = await UrlGetToJsonObjectWithSession<AccessTokenResponse>(request).ConfigureAwait(false);
 
+			// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 			return !string.IsNullOrEmpty(response?.Content.Data.WebAPIToken) ? (true, response!.Content.Data.WebAPIToken) : (false, null);
 		}
 
@@ -2806,6 +2693,8 @@ namespace ArchiSteamFarm.Steam.Integration {
 
 			Dictionary<string, string> data = new(2, StringComparer.Ordinal) {
 				{ "pin", parentalCode },
+
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				{ "sessionid", sessionID! }
 			};
 

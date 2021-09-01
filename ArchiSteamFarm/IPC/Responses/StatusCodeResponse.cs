@@ -19,16 +19,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using JetBrains.Annotations;
+using System.ComponentModel.DataAnnotations;
+using System.Net;
+using Newtonsoft.Json;
 
-namespace ArchiSteamFarm.Compatibility {
-	[PublicAPI]
-	public static class HashCode {
-		public static int Combine<T1, T2, T3>(T1 value1, T2 value2, T3 value3) =>
-#if NETFRAMEWORK
-			(value1, value2, value3).GetHashCode();
-#else
-			System.HashCode.Combine(value1, value2, value3);
-#endif
+namespace ArchiSteamFarm.IPC.Responses {
+	public sealed class StatusCodeResponse {
+		/// <summary>
+		///     Value indicating whether the status is permanent. If yes, retrying the request with exactly the same payload doesn't make sense due to a permanent problem (e.g. ASF misconfiguration).
+		/// </summary>
+		[JsonProperty(Required = Required.Always)]
+		[Required]
+		public bool Permanent { get; private set; }
+
+		/// <summary>
+		///     Status code transmitted in addition to the one in HTTP spec.
+		/// </summary>
+		[JsonProperty(Required = Required.Always)]
+		[Required]
+		public HttpStatusCode StatusCode { get; private set; }
+
+		internal StatusCodeResponse(HttpStatusCode statusCode, bool permanent) {
+			StatusCode = statusCode;
+			Permanent = permanent;
+		}
 	}
 }

@@ -19,16 +19,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NETFRAMEWORK
+using File = JustArchiNET.Madness.FileMadness.File;
+#else
+using System.IO;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Helpers;
+using ArchiSteamFarm.IPC.Integration;
 using ArchiSteamFarm.Localization;
 using ArchiSteamFarm.Steam.Integration;
 using JetBrains.Annotations;
@@ -177,15 +183,18 @@ namespace ArchiSteamFarm.Storage {
 		public bool AutoRestart { get; private set; } = DefaultAutoRestart;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[SwaggerItemsMinMax(MinimumUint = 1, MaximumUint = uint.MaxValue)]
 		public ImmutableHashSet<uint> Blacklist { get; private set; } = DefaultBlacklist;
 
 		[JsonProperty]
 		public string? CommandPrefix { get; private set; } = DefaultCommandPrefix;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte ConfirmationsLimiterDelay { get; private set; } = DefaultConfirmationsLimiterDelay;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(1, byte.MaxValue)]
 		public byte ConnectionTimeout { get; private set; } = DefaultConnectionTimeout;
 
 		[JsonProperty]
@@ -195,36 +204,50 @@ namespace ArchiSteamFarm.Storage {
 		public bool Debug { get; private set; } = DefaultDebug;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(1, byte.MaxValue)]
 		public byte FarmingDelay { get; private set; } = DefaultFarmingDelay;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte GiftsLimiterDelay { get; private set; } = DefaultGiftsLimiterDelay;
 
 		[JsonProperty(Required = Required.DisallowNull)]
 		public bool Headless { get; private set; } = DefaultHeadless;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte IdleFarmingPeriod { get; private set; } = DefaultIdleFarmingPeriod;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte InventoryLimiterDelay { get; private set; } = DefaultInventoryLimiterDelay;
 
 		[JsonProperty(Required = Required.DisallowNull)]
 		public bool IPC { get; private set; } = DefaultIPC;
 
 		[JsonProperty]
-		public string? IPCPassword { get; private set; } = DefaultIPCPassword;
+		public string? IPCPassword {
+			get => BackingIPCPassword;
+
+			internal set {
+				IsIPCPasswordSet = true;
+				BackingIPCPassword = value;
+			}
+		}
 
 		[JsonProperty(Required = Required.DisallowNull)]
 		public ArchiCryptoHelper.EHashingMethod IPCPasswordFormat { get; private set; } = DefaultIPCPasswordFormat;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte LoginLimiterDelay { get; private set; } = DefaultLoginLimiterDelay;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(1, byte.MaxValue)]
 		public byte MaxFarmingTime { get; private set; } = DefaultMaxFarmingTime;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte MaxTradeHoldDuration { get; private set; } = DefaultMaxTradeHoldDuration;
 
 		[JsonProperty(Required = Required.DisallowNull)]
@@ -234,9 +257,12 @@ namespace ArchiSteamFarm.Storage {
 		public bool Statistics { get; private set; } = DefaultStatistics;
 
 		[JsonProperty]
+		[MaxLength(SteamChatMessage.MaxMessagePrefixBytes / SteamChatMessage.ReservedEscapeMessageBytes)]
 		public string? SteamMessagePrefix { get; private set; } = DefaultSteamMessagePrefix;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[SwaggerSteamIdentifier]
+		[SwaggerValidValues(ValidIntValues = new[] { 0 })]
 		public ulong SteamOwnerID { get; private set; } = DefaultSteamOwnerID;
 
 		[JsonProperty(Required = Required.DisallowNull)]
@@ -246,9 +272,11 @@ namespace ArchiSteamFarm.Storage {
 		public EUpdateChannel UpdateChannel { get; private set; } = DefaultUpdateChannel;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte UpdatePeriod { get; private set; } = DefaultUpdatePeriod;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(ushort.MinValue, ushort.MaxValue)]
 		public ushort WebLimiterDelay { get; private set; } = DefaultWebLimiterDelay;
 
 		[JsonProperty(PropertyName = nameof(WebProxy))]
@@ -264,7 +292,9 @@ namespace ArchiSteamFarm.Storage {
 			set;
 		}
 
+		internal bool IsIPCPasswordSet { get; private set; }
 		internal bool IsWebProxyPasswordSet { get; private set; }
+
 		internal bool Saving { get; set; }
 
 		[JsonProperty]
@@ -277,6 +307,7 @@ namespace ArchiSteamFarm.Storage {
 			}
 		}
 
+		private string? BackingIPCPassword = DefaultIPCPassword;
 		private WebProxy? BackingWebProxy;
 		private string? BackingWebProxyPassword = DefaultWebProxyPassword;
 
@@ -299,6 +330,10 @@ namespace ArchiSteamFarm.Storage {
 		internal GlobalConfig() { }
 
 		internal (bool Valid, string? ErrorMessage) CheckValidation() {
+			if (Blacklist.Contains(0)) {
+				return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(Blacklist), 0));
+			}
+
 			if (ConnectionTimeout == 0) {
 				return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(ConnectionTimeout), ConnectionTimeout));
 			}
@@ -347,7 +382,7 @@ namespace ArchiSteamFarm.Storage {
 			GlobalConfig? globalConfig;
 
 			try {
-				json = await Compatibility.File.ReadAllTextAsync(filePath).ConfigureAwait(false);
+				json = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
 
 				if (string.IsNullOrEmpty(json)) {
 					ASF.ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsEmpty, nameof(json)));
@@ -372,6 +407,7 @@ namespace ArchiSteamFarm.Storage {
 
 			if (!valid) {
 				if (!string.IsNullOrEmpty(errorMessage)) {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					ASF.ArchiLogger.LogGenericError(errorMessage!);
 				}
 
@@ -403,16 +439,16 @@ namespace ArchiSteamFarm.Storage {
 			return await SerializableFile.Write(filePath, json).ConfigureAwait(false);
 		}
 
+		[PublicAPI]
 		public enum EOptimizationMode : byte {
 			MaxPerformance,
 			MinMemoryUsage
 		}
 
+		[PublicAPI]
 		public enum EUpdateChannel : byte {
 			None,
 			Stable,
-
-			[PublicAPI]
 			Experimental
 		}
 
@@ -430,7 +466,7 @@ namespace ArchiSteamFarm.Storage {
 		public bool ShouldSerializeIdleFarmingPeriod() => !Saving || (IdleFarmingPeriod != DefaultIdleFarmingPeriod);
 		public bool ShouldSerializeInventoryLimiterDelay() => !Saving || (InventoryLimiterDelay != DefaultInventoryLimiterDelay);
 		public bool ShouldSerializeIPC() => !Saving || (IPC != DefaultIPC);
-		public bool ShouldSerializeIPCPassword() => Saving && (IPCPassword != DefaultIPCPassword);
+		public bool ShouldSerializeIPCPassword() => Saving && IsIPCPasswordSet && (IPCPassword != DefaultIPCPassword);
 		public bool ShouldSerializeIPCPasswordFormat() => !Saving || (IPCPasswordFormat != DefaultIPCPasswordFormat);
 		public bool ShouldSerializeLoginLimiterDelay() => !Saving || (LoginLimiterDelay != DefaultLoginLimiterDelay);
 		public bool ShouldSerializeMaxFarmingTime() => !Saving || (MaxFarmingTime != DefaultMaxFarmingTime);

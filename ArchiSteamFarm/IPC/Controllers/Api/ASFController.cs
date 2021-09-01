@@ -19,13 +19,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NETFRAMEWORK
+using JustArchiNET.Madness;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using ArchiSteamFarm.Compatibility;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.IPC.Requests;
 using ArchiSteamFarm.IPC.Responses;
@@ -71,7 +73,7 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 
 			uint memoryUsage = (uint) GC.GetTotalMemory(false) / 1024;
 
-			ASFResponse result = new(SharedInfo.BuildInfo.Variant, SharedInfo.BuildInfo.CanUpdate, ASF.GlobalConfig, memoryUsage, StaticHelpers.ProcessStartTime, SharedInfo.Version);
+			ASFResponse result = new(SharedInfo.BuildInfo.Variant, SharedInfo.BuildInfo.CanUpdate, ASF.GlobalConfig, memoryUsage, OS.ProcessStartTime, SharedInfo.Version);
 
 			return Ok(new GenericResponse<ASFResponse>(result));
 		}
@@ -120,6 +122,10 @@ namespace ArchiSteamFarm.IPC.Controllers.Api {
 			}
 
 			request.GlobalConfig.Saving = true;
+
+			if (!request.GlobalConfig.IsIPCPasswordSet && ASF.GlobalConfig.IsIPCPasswordSet) {
+				request.GlobalConfig.IPCPassword = ASF.GlobalConfig.IPCPassword;
+			}
 
 			if (!request.GlobalConfig.IsWebProxyPasswordSet && ASF.GlobalConfig.IsWebProxyPasswordSet) {
 				request.GlobalConfig.WebProxyPassword = ASF.GlobalConfig.WebProxyPassword;

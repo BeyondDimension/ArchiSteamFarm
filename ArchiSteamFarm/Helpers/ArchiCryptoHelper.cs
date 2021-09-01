@@ -19,11 +19,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NETFRAMEWORK
+using OperatingSystem = JustArchiNET.Madness.OperatingSystemMadness.OperatingSystem;
+#endif
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using ArchiSteamFarm.Core;
@@ -187,6 +189,7 @@ namespace ArchiSteamFarm.Helpers {
 				throw new ArgumentNullException(nameof(encryptedString));
 			}
 
+#if TARGET_GENERIC || TARGET_WINDOWS
 #if __MOBILE__
 			return null;
 #else
@@ -207,6 +210,8 @@ namespace ArchiSteamFarm.Helpers {
 
 				return null;
 			}
+#else
+			return null;
 #endif
 		}
 
@@ -238,9 +243,6 @@ namespace ArchiSteamFarm.Helpers {
 				throw new ArgumentNullException(nameof(decryptedString));
 			}
 
-#if __MOBILE__
-			return null;
-#else
 			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
 				return null;
 			}
@@ -258,7 +260,6 @@ namespace ArchiSteamFarm.Helpers {
 
 				return null;
 			}
-#endif
 		}
 
 		public enum ECryptoMethod : byte {

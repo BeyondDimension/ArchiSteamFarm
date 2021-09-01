@@ -9,10 +9,10 @@ RUN echo "node: $(node --version)" && \
     npm run deploy --no-progress
 
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:5.0${IMAGESUFFIX} AS build-dotnet
+ARG CONFIGURATION=Release
 ARG STEAM_TOKEN_DUMPER_TOKEN
 ARG TARGETARCH
 ARG TARGETOS
-ENV CONFIGURATION Release
 ENV DOTNET_CLI_TELEMETRY_OPTOUT 1
 ENV DOTNET_NOLOGO 1
 ENV NET_CORE_VERSION net5.0
@@ -25,6 +25,7 @@ COPY resources resources
 COPY .editorconfig .editorconfig
 COPY Directory.Build.props Directory.Build.props
 COPY Directory.Packages.props Directory.Packages.props
+COPY LICENSE-2.0.txt LICENSE-2.0.txt
 RUN dotnet --info && \
     case "$TARGETOS" in \
       "linux") ;; \
@@ -64,4 +65,4 @@ WORKDIR /app
 COPY --from=build-dotnet /app/out/result .
 VOLUME ["/app/config", "/app/logs"]
 HEALTHCHECK CMD ["pidof", "-q", "dotnet"]
-ENTRYPOINT ["./ArchiSteamFarm.sh", "--no-restart", "--process-required", "--system-required"]
+ENTRYPOINT ["sh", "ArchiSteamFarm.sh", "--no-restart", "--process-required", "--system-required"]

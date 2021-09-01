@@ -20,20 +20,23 @@
 // limitations under the License.
 
 #if NETFRAMEWORK
-using ArchiSteamFarm.Compatibility;
-using File = System.IO.File;
+using JustArchiNET.Madness;
+using File = JustArchiNET.Madness.FileMadness.File;
 #else
 using System.IO;
 #endif
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Helpers;
+using ArchiSteamFarm.IPC.Integration;
 using ArchiSteamFarm.Localization;
 using ArchiSteamFarm.Steam.Data;
 using ArchiSteamFarm.Steam.Integration;
@@ -122,9 +125,6 @@ namespace ArchiSteamFarm.Steam.Storage {
 		private const byte SteamTradeTokenLength = 8;
 
 		[PublicAPI]
-		public static readonly ImmutableHashSet<Asset.EType> AllowedCompleteTypesToSend = ImmutableHashSet.Create(Asset.EType.TradingCard, Asset.EType.FoilTradingCard);
-
-		[PublicAPI]
 		public static readonly ImmutableHashSet<Asset.EType> DefaultCompleteTypesToSend = ImmutableHashSet<Asset.EType>.Empty;
 
 		[PublicAPI]
@@ -155,6 +155,7 @@ namespace ArchiSteamFarm.Steam.Storage {
 		public EBotBehaviour BotBehaviour { get; private set; } = DefaultBotBehaviour;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[SwaggerValidValues(ValidIntValues = new[] { (int) Asset.EType.FoilTradingCard, (int) Asset.EType.TradingCard })]
 		public ImmutableHashSet<Asset.EType> CompleteTypesToSend { get; private set; } = DefaultCompleteTypesToSend;
 
 		[JsonProperty]
@@ -173,9 +174,12 @@ namespace ArchiSteamFarm.Steam.Storage {
 		public bool FarmPriorityQueueOnly { get; private set; } = DefaultFarmPriorityQueueOnly;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[MaxLength(ArchiHandler.MaxGamesPlayedConcurrently)]
+		[SwaggerItemsMinMax(MinimumUint = 1, MaximumUint = uint.MaxValue)]
 		public ImmutableHashSet<uint> GamesPlayedWhileIdle { get; private set; } = DefaultGamesPlayedWhileIdle;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte HoursUntilCardDrops { get; private set; } = DefaultHoursUntilCardDrops;
 
 		[JsonProperty(Required = Required.DisallowNull)]
@@ -200,6 +204,7 @@ namespace ArchiSteamFarm.Steam.Storage {
 		public bool SendOnFarmingFinished { get; private set; } = DefaultSendOnFarmingFinished;
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[Range(byte.MinValue, byte.MaxValue)]
 		public byte SendTradePeriod { get; private set; } = DefaultSendTradePeriod;
 
 		[JsonProperty(Required = Required.DisallowNull)]
@@ -219,9 +224,14 @@ namespace ArchiSteamFarm.Steam.Storage {
 		}
 
 		[JsonProperty(Required = Required.DisallowNull)]
+		[SwaggerSteamIdentifier(AccountType = EAccountType.Clan)]
+		[SwaggerValidValues(ValidIntValues = new[] { 0 })]
 		public ulong SteamMasterClanID { get; private set; } = DefaultSteamMasterClanID;
 
 		[JsonProperty]
+		[MaxLength(SteamParentalCodeLength)]
+		[MinLength(SteamParentalCodeLength)]
+		[SwaggerValidValues(ValidStringValues = new[] { "0" })]
 		public string? SteamParentalCode {
 			get => BackingSteamParentalCode;
 
@@ -242,6 +252,8 @@ namespace ArchiSteamFarm.Steam.Storage {
 		}
 
 		[JsonProperty]
+		[MaxLength(SteamTradeTokenLength)]
+		[MinLength(SteamTradeTokenLength)]
 		public string? SteamTradeToken { get; private set; } = DefaultSteamTradeToken;
 
 		[JsonProperty(Required = Required.DisallowNull)]
@@ -289,6 +301,7 @@ namespace ArchiSteamFarm.Steam.Storage {
 
 			set {
 				if (!string.IsNullOrEmpty(value) && (PasswordFormat != ArchiCryptoHelper.ECryptoMethod.PlainText)) {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					value = ArchiCryptoHelper.Encrypt(PasswordFormat, value!);
 				}
 
@@ -304,26 +317,6 @@ namespace ArchiSteamFarm.Steam.Storage {
 		private string? BackingSteamLogin = DefaultSteamLogin;
 		private string? BackingSteamParentalCode = DefaultSteamParentalCode;
 		private string? BackingSteamPassword = DefaultSteamPassword;
-
-		[Obsolete]
-		[JsonProperty(Required = Required.DisallowNull)]
-		private bool IdlePriorityQueueOnly {
-			set {
-				ASF.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.WarningDeprecated, nameof(IdlePriorityQueueOnly), nameof(FarmPriorityQueueOnly)));
-
-				FarmPriorityQueueOnly = value;
-			}
-		}
-
-		[Obsolete]
-		[JsonProperty(Required = Required.DisallowNull)]
-		private bool IdleRefundableGames {
-			set {
-				ASF.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.WarningDeprecated, nameof(IdleRefundableGames), nameof(SkipRefundableGames)));
-
-				SkipRefundableGames = !value;
-			}
-		}
 
 		[JsonProperty(PropertyName = SharedInfo.UlongCompatibilityStringPrefix + nameof(SteamMasterClanID), Required = Required.DisallowNull)]
 		private string SSteamMasterClanID {
@@ -367,16 +360,38 @@ namespace ArchiSteamFarm.Steam.Storage {
 				return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(FarmingOrders), farmingOrder));
 			}
 
+			if (GamesPlayedWhileIdle.Contains(0)) {
+				return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(GamesPlayedWhileIdle), 0));
+			}
+
 			if (GamesPlayedWhileIdle.Count > ArchiHandler.MaxGamesPlayedConcurrently) {
-				return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(GamesPlayedWhileIdle), GamesPlayedWhileIdle.Count + " > " + ArchiHandler.MaxGamesPlayedConcurrently));
+				return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(GamesPlayedWhileIdle), nameof(GamesPlayedWhileIdle.Count) + " " + GamesPlayedWhileIdle.Count + " > " + ArchiHandler.MaxGamesPlayedConcurrently));
 			}
 
 			foreach (Asset.EType lootableType in LootableTypes.Where(lootableType => !Enum.IsDefined(typeof(Asset.EType), lootableType))) {
 				return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(LootableTypes), lootableType));
 			}
 
-			foreach (Asset.EType completableType in CompleteTypesToSend.Where(completableType => !Enum.IsDefined(typeof(Asset.EType), completableType) || !AllowedCompleteTypesToSend.Contains(completableType))) {
-				return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(CompleteTypesToSend), completableType));
+			HashSet<Asset.EType>? completeTypesToSendValidTypes = null;
+
+			foreach (Asset.EType completableType in CompleteTypesToSend) {
+				if (!Enum.IsDefined(typeof(Asset.EType), completableType)) {
+					return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(CompleteTypesToSend), completableType));
+				}
+
+				if (completeTypesToSendValidTypes == null) {
+					SwaggerValidValuesAttribute? completeTypesToSendValidValues = typeof(BotConfig).GetProperty(nameof(CompleteTypesToSend))?.GetCustomAttribute<SwaggerValidValuesAttribute>();
+
+					if (completeTypesToSendValidValues?.ValidIntValues == null) {
+						throw new InvalidOperationException(nameof(completeTypesToSendValidValues));
+					}
+
+					completeTypesToSendValidTypes = completeTypesToSendValidValues.ValidIntValues.Select(value => (Asset.EType) value).ToHashSet();
+				}
+
+				if (!completeTypesToSendValidTypes.Contains(completableType)) {
+					return (false, string.Format(CultureInfo.CurrentCulture, Strings.ErrorConfigPropertyInvalid, nameof(CompleteTypesToSend), completableType));
+				}
 			}
 
 			foreach (Asset.EType matchableType in MatchableTypes.Where(matchableType => !Enum.IsDefined(typeof(Asset.EType), matchableType))) {
@@ -437,7 +452,7 @@ namespace ArchiSteamFarm.Steam.Storage {
 			BotConfig? botConfig;
 
 			try {
-				json = await Compatibility.File.ReadAllTextAsync(filePath).ConfigureAwait(false);
+				json = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
 
 				if (string.IsNullOrEmpty(json)) {
 					ASF.ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsEmpty, nameof(json)));
@@ -462,6 +477,7 @@ namespace ArchiSteamFarm.Steam.Storage {
 
 			if (!valid) {
 				if (!string.IsNullOrEmpty(errorMessage)) {
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					ASF.ArchiLogger.LogGenericError(errorMessage!);
 				}
 

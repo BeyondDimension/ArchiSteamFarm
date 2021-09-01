@@ -19,6 +19,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NETFRAMEWORK
+using JustArchiNET.Madness;
+#endif
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
@@ -28,9 +31,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Helpers;
+using ArchiSteamFarm.IPC.Responses;
 using ArchiSteamFarm.Storage;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
 namespace ArchiSteamFarm.IPC.Integration {
@@ -41,56 +48,61 @@ namespace ArchiSteamFarm.IPC.Integration {
 		private const byte FailedAuthorizationsCooldownInHours = 1;
 		private const byte MaxFailedAuthorizationAttempts = 5;
 
-		private static readonly SemaphoreSlim AuthorizationSemaphore = new(1, 1);
+		private static readonly ConcurrentDictionary<IPAddress, Task> AuthorizationTasks = new();
+		private static readonly Timer ClearFailedAuthorizationsTimer = new(ClearFailedAuthorizations);
 		private static readonly ConcurrentDictionary<IPAddress, byte> FailedAuthorizations = new();
 
-		private static Timer? ClearFailedAuthorizationsTimer;
-
+		private readonly ForwardedHeadersOptions ForwardedHeadersOptions;
 		private readonly RequestDelegate Next;
 
-		public ApiAuthenticationMiddleware(RequestDelegate next) {
+		public ApiAuthenticationMiddleware(RequestDelegate next, IOptions<ForwardedHeadersOptions> forwardedHeadersOptions) {
 			Next = next ?? throw new ArgumentNullException(nameof(next));
 
+			if (forwardedHeadersOptions == null) {
+				throw new ArgumentNullException(nameof(forwardedHeadersOptions));
+			}
+
+			ForwardedHeadersOptions = forwardedHeadersOptions.Value ?? throw new InvalidOperationException(nameof(forwardedHeadersOptions));
+
 			lock (FailedAuthorizations) {
-				ClearFailedAuthorizationsTimer ??= new Timer(
-					_ => FailedAuthorizations.Clear(),
-					null,
-					TimeSpan.FromHours(FailedAuthorizationsCooldownInHours), // Delay
-					TimeSpan.FromHours(FailedAuthorizationsCooldownInHours) // Period
-				);
+				ClearFailedAuthorizationsTimer.Change(TimeSpan.FromHours(FailedAuthorizationsCooldownInHours), TimeSpan.FromHours(FailedAuthorizationsCooldownInHours));
 			}
 		}
 
-		[PublicAPI]
-		public async Task InvokeAsync(HttpContext context) {
+		[UsedImplicitly]
+#if NETFRAMEWORK
+		public async Task InvokeAsync(HttpContext context, IOptions<MvcJsonOptions> jsonOptions) {
+#else
+		public async Task InvokeAsync(HttpContext context, IOptions<MvcNewtonsoftJsonOptions> jsonOptions) {
+#endif
 			if (context == null) {
 				throw new ArgumentNullException(nameof(context));
 			}
 
-			HttpStatusCode authenticationStatus = await GetAuthenticationStatus(context).ConfigureAwait(false);
+			if (jsonOptions == null) {
+				throw new ArgumentNullException(nameof(jsonOptions));
+			}
 
-			if (authenticationStatus != HttpStatusCode.OK) {
-				await context.Response.Generate(authenticationStatus).ConfigureAwait(false);
+			(HttpStatusCode statusCode, bool permanent) = await GetAuthenticationStatus(context).ConfigureAwait(false);
+
+			if (statusCode == HttpStatusCode.OK) {
+				await Next(context).ConfigureAwait(false);
 
 				return;
 			}
 
-			await Next(context).ConfigureAwait(false);
+			context.Response.StatusCode = (int) statusCode;
+
+			StatusCodeResponse statusCodeResponse = new(statusCode, permanent);
+
+			await context.Response.WriteJsonAsync(new GenericResponse<StatusCodeResponse>(false, statusCodeResponse), jsonOptions.Value.SerializerSettings).ConfigureAwait(false);
 		}
 
-		private static async Task<HttpStatusCode> GetAuthenticationStatus(HttpContext context) {
+		private static void ClearFailedAuthorizations(object? state = null) => FailedAuthorizations.Clear();
+
+		private async Task<(HttpStatusCode StatusCode, bool Permanent)> GetAuthenticationStatus(HttpContext context) {
 			if (context == null) {
 				throw new ArgumentNullException(nameof(context));
-			}
-
-			if (ClearFailedAuthorizationsTimer == null) {
-				throw new InvalidOperationException(nameof(ClearFailedAuthorizationsTimer));
-			}
-
-			string? ipcPassword = ASF.GlobalConfig != null ? ASF.GlobalConfig.IPCPassword : GlobalConfig.DefaultIPCPassword;
-
-			if (string.IsNullOrEmpty(ipcPassword)) {
-				return HttpStatusCode.OK;
 			}
 
 			IPAddress? clientIP = context.Connection.RemoteIpAddress;
@@ -99,45 +111,79 @@ namespace ArchiSteamFarm.IPC.Integration {
 				throw new InvalidOperationException(nameof(clientIP));
 			}
 
-			if (FailedAuthorizations.TryGetValue(clientIP, out byte attempts)) {
-				if (attempts >= MaxFailedAuthorizationAttempts) {
-					return HttpStatusCode.Forbidden;
+			if (FailedAuthorizations.TryGetValue(clientIP, out byte attempts) && (attempts >= MaxFailedAuthorizationAttempts)) {
+				return (HttpStatusCode.Forbidden, false);
+			}
+
+			string? ipcPassword = ASF.GlobalConfig != null ? ASF.GlobalConfig.IPCPassword : GlobalConfig.DefaultIPCPassword;
+
+			if (string.IsNullOrEmpty(ipcPassword)) {
+				if (IPAddress.IsLoopback(clientIP)) {
+					return (HttpStatusCode.OK, true);
 				}
+
+				if (ForwardedHeadersOptions.KnownNetworks.Count == 0) {
+					return (HttpStatusCode.Forbidden, true);
+				}
+
+				if (clientIP.IsIPv4MappedToIPv6) {
+					IPAddress mappedClientIP = clientIP.MapToIPv4();
+
+					if (ForwardedHeadersOptions.KnownNetworks.Any(network => network.Contains(mappedClientIP))) {
+						return (HttpStatusCode.OK, true);
+					}
+				}
+
+				return (ForwardedHeadersOptions.KnownNetworks.Any(network => network.Contains(clientIP)) ? HttpStatusCode.OK : HttpStatusCode.Forbidden, true);
 			}
 
 			if (!context.Request.Headers.TryGetValue(HeadersField, out StringValues passwords) && !context.Request.Query.TryGetValue("password", out passwords)) {
-				return HttpStatusCode.Unauthorized;
+				return (HttpStatusCode.Unauthorized, true);
 			}
 
 			string? inputPassword = passwords.FirstOrDefault(password => !string.IsNullOrEmpty(password));
 
 			if (string.IsNullOrEmpty(inputPassword)) {
-				return HttpStatusCode.Unauthorized;
+				return (HttpStatusCode.Unauthorized, true);
 			}
 
 			ArchiCryptoHelper.EHashingMethod ipcPasswordFormat = ASF.GlobalConfig != null ? ASF.GlobalConfig.IPCPasswordFormat : GlobalConfig.DefaultIPCPasswordFormat;
 
-			string inputHash = ArchiCryptoHelper.Hash(ipcPasswordFormat, inputPassword!);
+			string inputHash = ArchiCryptoHelper.Hash(ipcPasswordFormat, inputPassword);
 
 			bool authorized = ipcPassword == inputHash;
 
-			await AuthorizationSemaphore.WaitAsync().ConfigureAwait(false);
+			while (true) {
+				if (AuthorizationTasks.TryGetValue(clientIP, out Task? task)) {
+					await task.ConfigureAwait(false);
 
-			try {
-				if (FailedAuthorizations.TryGetValue(clientIP, out attempts)) {
-					if (attempts >= MaxFailedAuthorizationAttempts) {
-						return HttpStatusCode.Forbidden;
+					continue;
+				}
+
+				TaskCompletionSource taskCompletionSource = new();
+
+				if (!AuthorizationTasks.TryAdd(clientIP, taskCompletionSource.Task)) {
+					continue;
+				}
+
+				try {
+					bool hasFailedAuthorizations = FailedAuthorizations.TryGetValue(clientIP, out attempts);
+
+					if (hasFailedAuthorizations && (attempts >= MaxFailedAuthorizationAttempts)) {
+						return (HttpStatusCode.Forbidden, false);
 					}
+
+					if (!authorized) {
+						FailedAuthorizations[clientIP] = hasFailedAuthorizations ? ++attempts : (byte) 1;
+					}
+				} finally {
+					AuthorizationTasks.TryRemove(clientIP, out _);
+
+					taskCompletionSource.SetResult();
 				}
 
-				if (!authorized) {
-					FailedAuthorizations[clientIP] = FailedAuthorizations.TryGetValue(clientIP, out attempts) ? ++attempts : (byte) 1;
-				}
-			} finally {
-				AuthorizationSemaphore.Release();
+				return (authorized ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, true);
 			}
-
-			return authorized ? HttpStatusCode.OK : HttpStatusCode.Unauthorized;
 		}
 	}
 }

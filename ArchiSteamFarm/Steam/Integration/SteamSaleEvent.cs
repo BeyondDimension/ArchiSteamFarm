@@ -20,7 +20,7 @@
 // limitations under the License.
 
 #if NETFRAMEWORK
-using ArchiSteamFarm.Compatibility;
+using JustArchiNET.Madness;
 #endif
 using System;
 using System.Collections.Immutable;
@@ -36,7 +36,10 @@ namespace ArchiSteamFarm.Steam.Integration {
 		private const byte MaxSingleQueuesDaily = 3; // This is only a failsafe for infinite queue clearing (in case IsDiscoveryQueueAvailable() would fail us)
 
 		private readonly Bot Bot;
+
+#pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private readonly Timer SaleEventTimer;
+#pragma warning restore CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 
 		internal SteamSaleEvent(Bot bot) {
 			Bot = bot ?? throw new ArgumentNullException(nameof(bot));
@@ -49,9 +52,9 @@ namespace ArchiSteamFarm.Steam.Integration {
 			);
 		}
 
-		public async ValueTask DisposeAsync() => await SaleEventTimer.DisposeAsync().ConfigureAwait(false);
+		public ValueTask DisposeAsync() => SaleEventTimer.DisposeAsync();
 
-		private async void ExploreDiscoveryQueue(object? state) {
+		private async void ExploreDiscoveryQueue(object? state = null) {
 			if (!Bot.IsConnectedAndLoggedOn) {
 				return;
 			}
@@ -62,7 +65,7 @@ namespace ArchiSteamFarm.Steam.Integration {
 				ImmutableHashSet<uint>? queue = await Bot.ArchiWebHandler.GenerateNewDiscoveryQueue().ConfigureAwait(false);
 
 				if ((queue == null) || (queue.Count == 0)) {
-					Bot.ArchiLogger.LogGenericTrace(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsEmpty, nameof(queue)));
+					Bot.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsEmpty, nameof(queue)));
 
 					break;
 				}
@@ -108,7 +111,9 @@ namespace ArchiSteamFarm.Steam.Integration {
 				return null;
 			}
 
-			Bot.ArchiLogger.LogGenericTrace(text);
+			if (Debugging.IsUserDebugging) {
+				Bot.ArchiLogger.LogGenericDebug(string.Format(CultureInfo.CurrentCulture, Strings.Content, text));
+			}
 
 			// It'd make more sense to check against "Come back tomorrow", but it might not cover out-of-the-event queue
 			return text.StartsWith("You can get ", StringComparison.Ordinal);

@@ -20,7 +20,7 @@
 // limitations under the License.
 
 #if NETFRAMEWORK
-using ArchiSteamFarm.Compatibility;
+using JustArchiNET.Madness;
 #endif
 using System;
 using System.Collections.Generic;
@@ -64,7 +64,11 @@ namespace ArchiSteamFarm.Core {
 
 		private readonly Bot Bot;
 		private readonly SemaphoreSlim MatchActivelySemaphore = new(1, 1);
+
+#pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private readonly Timer MatchActivelyTimer;
+#pragma warning restore CA2213 // False positive, .NET Framework can't understand DisposeAsync()
+
 		private readonly SemaphoreSlim RequestsSemaphore = new(1, 1);
 
 		private DateTime LastAnnouncementCheck;
@@ -228,6 +232,8 @@ namespace ArchiSteamFarm.Core {
 					{ "MatchEverything", Bot.BotConfig.TradingPreferences.HasFlag(BotConfig.ETradingPreferences.MatchEverything) ? "1" : "0" },
 					{ "Nickname", nickname ?? "" },
 					{ "SteamID", Bot.SteamID.ToString(CultureInfo.InvariantCulture) },
+
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					{ "TradeToken", tradeToken! }
 				};
 
@@ -312,7 +318,7 @@ namespace ArchiSteamFarm.Core {
 			return true;
 		}
 
-		private async void MatchActively(object? state) {
+		private async void MatchActively(object? state = null) {
 			if (!Bot.IsConnectedAndLoggedOn || Bot.BotConfig.TradingPreferences.HasFlag(BotConfig.ETradingPreferences.MatchEverything) || !Bot.BotConfig.TradingPreferences.HasFlag(BotConfig.ETradingPreferences.MatchActively) || (await IsEligibleForMatching().ConfigureAwait(false) != true)) {
 				Bot.ArchiLogger.LogGenericTrace(Strings.ErrorAborted);
 

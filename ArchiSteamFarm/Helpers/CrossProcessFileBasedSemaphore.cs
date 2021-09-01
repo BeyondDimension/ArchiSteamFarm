@@ -19,11 +19,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if NETFRAMEWORK
+using OperatingSystem = JustArchiNET.Madness.OperatingSystemMadness.OperatingSystem;
+#endif
+#if TARGET_GENERIC || TARGET_WINDOWS
+using System.Security.AccessControl;
+#endif
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Security.AccessControl;
 using System.Threading;
 using System.Threading.Tasks;
 using ArchiSteamFarm.Core;
@@ -161,30 +165,35 @@ namespace ArchiSteamFarm.Helpers {
 			}
 
 			if (!Directory.Exists(directoryPath)) {
-				Directory.CreateDirectory(directoryPath!);
+				Directory.CreateDirectory(directoryPath);
 
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-					DirectoryInfo directoryInfo = new(directoryPath!);
+#if TARGET_GENERIC || TARGET_WINDOWS
+				if (OperatingSystem.IsWindows()) {
+					DirectoryInfo directoryInfo = new(directoryPath);
 
 					try {
-						DirectorySecurity directorySecurity = new(directoryPath!, AccessControlSections.All);
+						DirectorySecurity directorySecurity = new(directoryPath, AccessControlSections.All);
 
 						directoryInfo.SetAccessControl(directorySecurity);
 					} catch (PrivilegeNotHeldException e) {
 						// Non-critical, user might have no rights to manage the resource
 						ASF.ArchiLogger.LogGenericDebuggingException(e);
 					}
-				} else {
-					OS.UnixSetFileAccess(directoryPath!, OS.EUnixPermission.Combined777);
 				}
+#endif
+
+#if TARGET_GENERIC || !TARGET_WINDOWS
+				if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
+					OS.UnixSetFileAccess(directoryPath, OS.EUnixPermission.Combined777);
+				}
+#endif
 			}
 
 			try {
-#pragma warning disable CA1508 // False positive, FileStream is not null here indeed, but using clause is needed for dispose
-				using (new FileStream(FilePath, FileMode.CreateNew)) { }
-#pragma warning restore CA1508 // False positive, FileStream is not null here indeed, but using clause is needed for dispose
+				new FileStream(FilePath, FileMode.CreateNew).Dispose();
 
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+#if TARGET_GENERIC || TARGET_WINDOWS
+				if (OperatingSystem.IsWindows()) {
 					FileInfo fileInfo = new(FilePath);
 
 					try {
@@ -195,9 +204,14 @@ namespace ArchiSteamFarm.Helpers {
 						// Non-critical, user might have no rights to manage the resource
 						ASF.ArchiLogger.LogGenericDebuggingException(e);
 					}
-				} else {
+				}
+#endif
+
+#if TARGET_GENERIC || !TARGET_WINDOWS
+				if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
 					OS.UnixSetFileAccess(FilePath, OS.EUnixPermission.Combined777);
 				}
+#endif
 			} catch (IOException) {
 				// Ignored, if the file was already created in the meantime by another instance, this is fine
 			}

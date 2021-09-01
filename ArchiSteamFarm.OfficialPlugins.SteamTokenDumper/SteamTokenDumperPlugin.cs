@@ -20,7 +20,7 @@
 // limitations under the License.
 
 #if NETFRAMEWORK
-using ArchiSteamFarm.Compatibility;
+using JustArchiNET.Madness;
 #endif
 using System;
 using System.Collections.Concurrent;
@@ -169,7 +169,7 @@ namespace ArchiSteamFarm.OfficialPlugins.SteamTokenDumper {
 			}
 
 			SemaphoreSlim refreshSemaphore = new(1, 1);
-			Timer refreshTimer = new(async _ => await Refresh(bot).ConfigureAwait(false));
+			Timer refreshTimer = new(OnBotRefreshTimer, bot, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
 			if (!BotSynchronizations.TryAdd(bot, (refreshSemaphore, refreshTimer))) {
 				refreshSemaphore.Dispose();
@@ -244,6 +244,14 @@ namespace ArchiSteamFarm.OfficialPlugins.SteamTokenDumper {
 			}
 
 			GlobalCache.OnPICSChangesRestart(currentChangeNumber);
+		}
+
+		private static async void OnBotRefreshTimer(object? state) {
+			if (state is not Bot bot) {
+				throw new InvalidOperationException(nameof(state));
+			}
+
+			await Refresh(bot).ConfigureAwait(false);
 		}
 
 		private static async void OnLicenseList(Bot bot, SteamApps.LicenseListCallback callback) {
@@ -379,7 +387,7 @@ namespace ArchiSteamFarm.OfficialPlugins.SteamTokenDumper {
 						AsyncJobMultiple<SteamApps.PICSProductInfoCallback>.ResultSet response;
 
 						try {
-							response = await bot.SteamApps.PICSGetProductInfo(appIDsThisRound.Select(appID => new SteamApps.PICSRequest { ID = appID, AccessToken = GlobalCache.GetAppToken(appID), Public = false }), Enumerable.Empty<SteamApps.PICSRequest>()).ToLongRunningTask().ConfigureAwait(false);
+							response = await bot.SteamApps.PICSGetProductInfo(appIDsThisRound.Select(appID => new SteamApps.PICSRequest(appID, GlobalCache.GetAppToken(appID))), Enumerable.Empty<SteamApps.PICSRequest>()).ToLongRunningTask().ConfigureAwait(false);
 						} catch (Exception e) {
 							bot.ArchiLogger.LogGenericWarningException(e);
 
@@ -445,7 +453,7 @@ namespace ArchiSteamFarm.OfficialPlugins.SteamTokenDumper {
 			}
 		}
 
-		private static async void SubmitData(object? state) {
+		private static async void SubmitData(object? state = null) {
 			if (Bot.Bots == null) {
 				throw new InvalidOperationException(nameof(Bot.Bots));
 			}

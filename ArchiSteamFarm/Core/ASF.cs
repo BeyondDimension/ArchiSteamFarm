@@ -20,9 +20,10 @@
 // limitations under the License.
 
 #if NETFRAMEWORK
-using ArchiSteamFarm.Compatibility;
-using File = System.IO.File;
-using Path = System.IO.Path;
+using JustArchiNET.Madness;
+using File = JustArchiNET.Madness.FileMadness.File;
+using OperatingSystem = JustArchiNET.Madness.OperatingSystemMadness.OperatingSystem;
+using Path = JustArchiNET.Madness.PathMadness.Path;
 #endif
 using System;
 using System.Collections.Concurrent;
@@ -34,7 +35,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -65,13 +65,13 @@ namespace ArchiSteamFarm.Core {
 		public static byte LoadBalancingDelay => Math.Max(GlobalConfig?.LoginLimiterDelay ?? 0, GlobalConfig.DefaultLoginLimiterDelay);
 
 		[PublicAPI]
-		public static GlobalConfig? GlobalConfig { get; private set; }
+		public static GlobalConfig? GlobalConfig { get; internal set; }
 
 		[PublicAPI]
-		public static GlobalDatabase? GlobalDatabase { get; private set; }
+		public static GlobalDatabase? GlobalDatabase { get; internal set; }
 
 		[PublicAPI]
-		public static WebBrowser? WebBrowser { get; internal set; }
+		public static WebBrowser? WebBrowser { get; private set; }
 
 		internal static ICrossProcessSemaphore? ConfirmationsSemaphore { get; private set; }
 		internal static ICrossProcessSemaphore? GiftsSemaphore { get; private set; }
@@ -79,7 +79,7 @@ namespace ArchiSteamFarm.Core {
 		internal static ICrossProcessSemaphore? LoginRateLimitingSemaphore { get; private set; }
 		internal static ICrossProcessSemaphore? LoginSemaphore { get; private set; }
 		internal static ICrossProcessSemaphore? RateLimitingSemaphore { get; private set; }
-		internal static ImmutableDictionary<Uri, (ICrossProcessSemaphore RateLimitingSemaphore, SemaphoreSlim? OpenConnectionsSemaphore)>? WebLimitingSemaphores { get; private set; }
+		internal static ImmutableDictionary<Uri, (ICrossProcessSemaphore RateLimitingSemaphore, SemaphoreSlim OpenConnectionsSemaphore)>? WebLimitingSemaphores { get; private set; }
 
 		private static readonly SemaphoreSlim UpdateSemaphore = new(1, 1);
 
@@ -122,6 +122,7 @@ namespace ArchiSteamFarm.Core {
 			await UpdateAndRestart().ConfigureAwait(false);
 
 			await PluginsCore.OnASFInitModules(GlobalConfig.AdditionalProperties).ConfigureAwait(false);
+			await InitRateLimiters().ConfigureAwait(false);
 
 			StringComparer botsComparer = await PluginsCore.GetBotsComparer().ConfigureAwait(false);
 
@@ -146,59 +147,6 @@ namespace ArchiSteamFarm.Core {
 			}
 		}
 
-		internal static async Task InitGlobalConfig(GlobalConfig globalConfig) {
-			if (globalConfig == null) {
-				throw new ArgumentNullException(nameof(globalConfig));
-			}
-
-			if (GlobalConfig != null) {
-				return;
-			}
-
-			GlobalConfig = globalConfig;
-
-			// The only purpose of using hashingAlgorithm below is to cut on a potential size of the resource name - paths can be really long, and we almost certainly have some upper limit on the resource name we can allocate
-			// At the same time it'd be the best if we avoided all special characters, such as '/' found e.g. in base64, as we can't be sure that it's not a prohibited character in regards to native OS implementation
-			// Because of that, SHA256 is sufficient for our case, as it generates alphanumeric characters only, and is barely 256-bit long. We don't need any kind of complex cryptography or collision detection here, any hashing algorithm will do, and the shorter the better
-			string networkGroupText = "";
-
-			if (!string.IsNullOrEmpty(Program.NetworkGroup)) {
-				using SHA256CryptoServiceProvider hashingAlgorithm = new();
-
-				networkGroupText = "-" + BitConverter.ToString(hashingAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(Program.NetworkGroup!))).Replace("-", "", StringComparison.Ordinal);
-			} else if (!string.IsNullOrEmpty(globalConfig.WebProxyText)) {
-				using SHA256CryptoServiceProvider hashingAlgorithm = new();
-
-				networkGroupText = "-" + BitConverter.ToString(hashingAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(globalConfig.WebProxyText!))).Replace("-", "", StringComparison.Ordinal);
-			}
-
-			ConfirmationsSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(ConfirmationsSemaphore) + networkGroupText).ConfigureAwait(false);
-			GiftsSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(GiftsSemaphore) + networkGroupText).ConfigureAwait(false);
-			InventorySemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(InventorySemaphore) + networkGroupText).ConfigureAwait(false);
-			LoginRateLimitingSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(LoginRateLimitingSemaphore) + networkGroupText).ConfigureAwait(false);
-			LoginSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(LoginSemaphore) + networkGroupText).ConfigureAwait(false);
-			RateLimitingSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(RateLimitingSemaphore) + networkGroupText).ConfigureAwait(false);
-
-			WebLimitingSemaphores ??= new Dictionary<Uri, (ICrossProcessSemaphore RateLimitingSemaphore, SemaphoreSlim? OpenConnectionsSemaphore)>(4) {
-				{ ArchiWebHandler.SteamCommunityURL, (await PluginsCore.GetCrossProcessSemaphore(nameof(ArchiWebHandler) + networkGroupText + "-" + nameof(ArchiWebHandler.SteamCommunityURL)).ConfigureAwait(false), new SemaphoreSlim(WebBrowser.MaxConnections, WebBrowser.MaxConnections)) },
-				{ ArchiWebHandler.SteamHelpURL, (await PluginsCore.GetCrossProcessSemaphore(nameof(ArchiWebHandler) + networkGroupText + "-" + nameof(ArchiWebHandler.SteamHelpURL)).ConfigureAwait(false), new SemaphoreSlim(WebBrowser.MaxConnections, WebBrowser.MaxConnections)) },
-				{ ArchiWebHandler.SteamStoreURL, (await PluginsCore.GetCrossProcessSemaphore(nameof(ArchiWebHandler) + networkGroupText + "-" + nameof(ArchiWebHandler.SteamStoreURL)).ConfigureAwait(false), new SemaphoreSlim(WebBrowser.MaxConnections, WebBrowser.MaxConnections)) },
-				{ WebAPI.DefaultBaseAddress, (await PluginsCore.GetCrossProcessSemaphore(nameof(ArchiWebHandler) + networkGroupText + "-" + nameof(WebAPI)).ConfigureAwait(false), new SemaphoreSlim(WebBrowser.MaxConnections, WebBrowser.MaxConnections)) }
-			}.ToImmutableDictionary();
-		}
-
-		internal static void InitGlobalDatabase(GlobalDatabase globalDatabase) {
-			if (globalDatabase == null) {
-				throw new ArgumentNullException(nameof(globalDatabase));
-			}
-
-			if (GlobalDatabase != null) {
-				return;
-			}
-
-			GlobalDatabase = globalDatabase;
-		}
-
 		internal static bool IsValidBotName(string botName) {
 			if (string.IsNullOrEmpty(botName)) {
 				throw new ArgumentNullException(nameof(botName));
@@ -212,7 +160,7 @@ namespace ArchiSteamFarm.Core {
 				return false;
 			}
 
-			return Compatibility.Path.GetRelativePath(".", botName) == botName;
+			return Path.GetRelativePath(".", botName) == botName;
 		}
 
 		internal static async Task RestartOrExit() {
@@ -283,16 +231,11 @@ namespace ArchiSteamFarm.Core {
 					return null;
 				}
 
-				Version newVersion = new(releaseResponse.Tag!);
+				Version newVersion = new(releaseResponse.Tag);
 
 				ArchiLogger.LogGenericInfo(string.Format(CultureInfo.CurrentCulture, Strings.UpdateVersionInfo, SharedInfo.Version, newVersion));
 
 				if (SharedInfo.Version >= newVersion) {
-					if (SharedInfo.Version > newVersion) {
-						ArchiLogger.LogGenericWarning(Strings.WarningPreReleaseVersion);
-						await Task.Delay(15 * 1000).ConfigureAwait(false);
-					}
-
 					return newVersion;
 				}
 
@@ -358,13 +301,7 @@ namespace ArchiSteamFarm.Core {
 				MemoryStream ms = new(response.Content as byte[] ?? response.Content.ToArray());
 
 				try {
-#if NETFRAMEWORK
-#pragma warning disable CA1508 // False positive, ms is not null here indeed, but using clause is needed for dispose
-					using (ms) {
-#pragma warning restore CA1508 // False positive, ms is not null here indeed, but using clause is needed for dispose
-#else
 					await using (ms.ConfigureAwait(false)) {
-#endif
 						using ZipArchive zipArchive = new(ms);
 
 						if (!UpdateFromArchive(zipArchive, SharedInfo.HomeDirectory)) {
@@ -377,7 +314,7 @@ namespace ArchiSteamFarm.Core {
 					return null;
 				}
 
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+				if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
 					string executable = Path.Combine(SharedInfo.HomeDirectory, SharedInfo.AssemblyName);
 
 					if (File.Exists(executable)) {
@@ -446,6 +383,42 @@ namespace ArchiSteamFarm.Core {
 			FileSystemWatcher.EnableRaisingEvents = true;
 		}
 
+		private static async Task InitRateLimiters() {
+			if (GlobalConfig == null) {
+				throw new InvalidOperationException(nameof(GlobalConfig));
+			}
+
+			// The only purpose of using hashingAlgorithm below is to cut on a potential size of the resource name - paths can be really long, and we almost certainly have some upper limit on the resource name we can allocate
+			// At the same time it'd be the best if we avoided all special characters, such as '/' found e.g. in base64, as we can't be sure that it's not a prohibited character in regards to native OS implementation
+			// Because of that, SHA256 is sufficient for our case, as it generates alphanumeric characters only, and is barely 256-bit long. We don't need any kind of complex cryptography or collision detection here, any hashing algorithm will do, and the shorter the better
+			string networkGroupText = "";
+
+			if (!string.IsNullOrEmpty(Program.NetworkGroup)) {
+				using SHA256 hashingAlgorithm = SHA256.Create();
+
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
+				networkGroupText = "-" + BitConverter.ToString(hashingAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(Program.NetworkGroup!))).Replace("-", "", StringComparison.Ordinal);
+			} else if (!string.IsNullOrEmpty(GlobalConfig.WebProxyText)) {
+				using SHA256 hashingAlgorithm = SHA256.Create();
+
+				networkGroupText = "-" + BitConverter.ToString(hashingAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(GlobalConfig.WebProxyText!))).Replace("-", "", StringComparison.Ordinal);
+			}
+
+			ConfirmationsSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(ConfirmationsSemaphore) + networkGroupText).ConfigureAwait(false);
+			GiftsSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(GiftsSemaphore) + networkGroupText).ConfigureAwait(false);
+			InventorySemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(InventorySemaphore) + networkGroupText).ConfigureAwait(false);
+			LoginRateLimitingSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(LoginRateLimitingSemaphore) + networkGroupText).ConfigureAwait(false);
+			LoginSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(LoginSemaphore) + networkGroupText).ConfigureAwait(false);
+			RateLimitingSemaphore ??= await PluginsCore.GetCrossProcessSemaphore(nameof(RateLimitingSemaphore) + networkGroupText).ConfigureAwait(false);
+
+			WebLimitingSemaphores ??= new Dictionary<Uri, (ICrossProcessSemaphore RateLimitingSemaphore, SemaphoreSlim OpenConnectionsSemaphore)>(4) {
+				{ ArchiWebHandler.SteamCommunityURL, (await PluginsCore.GetCrossProcessSemaphore(nameof(ArchiWebHandler) + networkGroupText + "-" + nameof(ArchiWebHandler.SteamCommunityURL)).ConfigureAwait(false), new SemaphoreSlim(WebBrowser.MaxConnections, WebBrowser.MaxConnections)) },
+				{ ArchiWebHandler.SteamHelpURL, (await PluginsCore.GetCrossProcessSemaphore(nameof(ArchiWebHandler) + networkGroupText + "-" + nameof(ArchiWebHandler.SteamHelpURL)).ConfigureAwait(false), new SemaphoreSlim(WebBrowser.MaxConnections, WebBrowser.MaxConnections)) },
+				{ ArchiWebHandler.SteamStoreURL, (await PluginsCore.GetCrossProcessSemaphore(nameof(ArchiWebHandler) + networkGroupText + "-" + nameof(ArchiWebHandler.SteamStoreURL)).ConfigureAwait(false), new SemaphoreSlim(WebBrowser.MaxConnections, WebBrowser.MaxConnections)) },
+				{ WebAPI.DefaultBaseAddress, (await PluginsCore.GetCrossProcessSemaphore(nameof(ArchiWebHandler) + networkGroupText + "-" + nameof(WebAPI)).ConfigureAwait(false), new SemaphoreSlim(WebBrowser.MaxConnections, WebBrowser.MaxConnections)) }
+			}.ToImmutableDictionary();
+		}
+
 		private static void LoadAssembliesRecursively(Assembly assembly, HashSet<string>? loadedAssembliesNames = null) {
 			if (assembly == null) {
 				throw new ArgumentNullException(nameof(assembly));
@@ -453,6 +426,8 @@ namespace ArchiSteamFarm.Core {
 
 			if (loadedAssembliesNames == null) {
 				Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				loadedAssembliesNames = loadedAssemblies.Select(loadedAssembly => loadedAssembly.FullName).Where(name => !string.IsNullOrEmpty(name)).ToHashSet()!;
 			}
 
@@ -462,6 +437,8 @@ namespace ArchiSteamFarm.Core {
 				LoadAssembliesRecursively(Assembly.Load(assemblyName), loadedAssembliesNames);
 			}
 		}
+
+		private static async void OnAutoUpdatesTimer(object? state = null) => await UpdateAndRestart().ConfigureAwait(false);
 
 		private static async void OnChanged(object sender, FileSystemEventArgs e) {
 			if (sender == null) {
@@ -906,7 +883,7 @@ namespace ArchiSteamFarm.Core {
 				TimeSpan autoUpdatePeriod = TimeSpan.FromHours(GlobalConfig.UpdatePeriod);
 
 				AutoUpdatesTimer = new Timer(
-					async _ => await UpdateAndRestart().ConfigureAwait(false),
+					OnAutoUpdatesTimer,
 					null,
 					autoUpdatePeriod, // Delay
 					autoUpdatePeriod // Period
@@ -917,7 +894,16 @@ namespace ArchiSteamFarm.Core {
 
 			Version? newVersion = await Update().ConfigureAwait(false);
 
-			if ((newVersion == null) || (newVersion <= SharedInfo.Version)) {
+			if (newVersion == null) {
+				return;
+			}
+
+			if (SharedInfo.Version >= newVersion) {
+				if (SharedInfo.Version > newVersion) {
+					ArchiLogger.LogGenericWarning(Strings.WarningPreReleaseVersion);
+					await Task.Delay(15 * 1000).ConfigureAwait(false);
+				}
+
 				return;
 			}
 
@@ -951,7 +937,7 @@ namespace ArchiSteamFarm.Core {
 					return false;
 				}
 
-				string relativeFilePath = Compatibility.Path.GetRelativePath(targetDirectory, file);
+				string relativeFilePath = Path.GetRelativePath(targetDirectory, file);
 
 				if (string.IsNullOrEmpty(relativeFilePath)) {
 					ArchiLogger.LogNullError(nameof(relativeFilePath));
@@ -999,7 +985,8 @@ namespace ArchiSteamFarm.Core {
 				Directory.CreateDirectory(targetBackupDirectory);
 
 				string targetBackupFile = Path.Combine(targetBackupDirectory, fileName);
-				Compatibility.File.Move(file, targetBackupFile, true);
+
+				File.Move(file, targetBackupFile, true);
 			}
 
 			// We can now get rid of directories that are empty
@@ -1020,7 +1007,8 @@ namespace ArchiSteamFarm.Core {
 				if (File.Exists(file)) {
 					// This is possible only with files that we decided to leave in place during our backup function
 					string targetBackupFile = file + ".bak";
-					Compatibility.File.Move(file, targetBackupFile, true);
+
+					File.Move(file, targetBackupFile, true);
 				}
 
 				// Check if this file requires its own folder
@@ -1034,6 +1022,7 @@ namespace ArchiSteamFarm.Core {
 					}
 
 					if (!Directory.Exists(directory)) {
+						// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 						Directory.CreateDirectory(directory!);
 					}
 

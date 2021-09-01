@@ -20,7 +20,7 @@
 // limitations under the License.
 
 #if NETFRAMEWORK
-using ArchiSteamFarm.Compatibility;
+using JustArchiNET.Madness;
 #endif
 using System;
 using System.Collections.Generic;
@@ -53,7 +53,10 @@ namespace ArchiSteamFarm.Steam.Interaction {
 		private readonly ConcurrentHashSet<ulong> HandledGifts = new();
 		private readonly SemaphoreSlim TradingSemaphore = new(1, 1);
 
+#pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private Timer? CardsFarmerResumeTimer;
+#pragma warning restore CA2213 // False positive, .NET Framework can't understand DisposeAsync()
+
 		private bool ProcessingGiftsScheduled;
 		private bool TradingScheduled;
 
@@ -201,7 +204,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 				// We add extra delay because OnFarmingStopped() also executes PlayGames()
 				// Despite of proper order on our end, Steam network might not respect it
 				await Task.Delay(Bot.CallbackSleep).ConfigureAwait(false);
-				await Bot.ArchiHandler.PlayGames(Enumerable.Empty<uint>(), Bot.BotConfig.CustomGamePlayedWhileIdle).ConfigureAwait(false);
+				await Bot.ArchiHandler.PlayGames(Array.Empty<uint>(), Bot.BotConfig.CustomGamePlayedWhileIdle).ConfigureAwait(false);
 			}
 
 			if (resumeInSeconds > 0) {
@@ -221,7 +224,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 		}
 
 		[PublicAPI]
-		public async Task<(bool Success, string Message)> Play(IEnumerable<uint> gameIDs, string? gameName = null) {
+		public async Task<(bool Success, string Message)> Play(IReadOnlyCollection<uint> gameIDs, string? gameName = null) {
 			if (gameIDs == null) {
 				throw new ArgumentNullException(nameof(gameIDs));
 			}
@@ -236,7 +239,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 
 			await Bot.ArchiHandler.PlayGames(gameIDs, gameName).ConfigureAwait(false);
 
-			return (true, Strings.Done);
+			return (true, gameIDs.Count > 0 ? string.Format(CultureInfo.CurrentCulture, Strings.BotIdlingSelectedGames, nameof(gameIDs), string.Join(", ", gameIDs)) : Strings.Done);
 		}
 
 		[PublicAPI]
@@ -248,6 +251,10 @@ namespace ArchiSteamFarm.Steam.Interaction {
 
 		[PublicAPI]
 		public static (bool Success, string Message) Restart() {
+			if (!Program.RestartAllowed) {
+				return (false, "!" + nameof(Program.RestartAllowed));
+			}
+
 			// Schedule the task after some time so user can receive response
 			Utilities.InBackground(
 				async () => {
@@ -500,7 +507,7 @@ namespace ArchiSteamFarm.Steam.Interaction {
 		internal void OnDisconnected() => HandledGifts.Clear();
 
 		private ulong GetFirstSteamMasterID() {
-			ulong steamMasterID = Bot.BotConfig.SteamUserPermissions.Where(kv => (kv.Key > 0) && (kv.Key != Bot.SteamID) && new SteamID(kv.Key).IsIndividualAccount && (kv.Value == BotConfig.EAccess.Master)).Select(kv => kv.Key).OrderBy(steamID => steamID).FirstOrDefault()!;
+			ulong steamMasterID = Bot.BotConfig.SteamUserPermissions.Where(kv => (kv.Key > 0) && (kv.Key != Bot.SteamID) && new SteamID(kv.Key).IsIndividualAccount && (kv.Value == BotConfig.EAccess.Master)).Select(kv => kv.Key).OrderBy(steamID => steamID).FirstOrDefault();
 
 			if (steamMasterID > 0) {
 				return steamMasterID;

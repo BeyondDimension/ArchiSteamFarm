@@ -19,10 +19,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK || NETSTANDARD
-using ArchiSteamFarm.Compatibility;
-using File = System.IO.File;
-using Path = System.IO.Path;
+#if NETFRAMEWORK
+using JustArchiNET.Madness;
+using File = JustArchiNET.Madness.FileMadness.File;
+using Path = JustArchiNET.Madness.PathMadness.Path;
 #endif
 using System;
 using System.Collections;
@@ -87,6 +87,7 @@ namespace ArchiSteamFarm.Steam {
 		[PublicAPI]
 		public ASFActions Actions { get; }
 
+		[JsonIgnore]
 		[PublicAPI]
 		public ArchiHandler ArchiHandler { get; }
 
@@ -147,7 +148,11 @@ namespace ArchiSteamFarm.Steam {
 		private readonly CallbackManager CallbackManager;
 		private readonly SemaphoreSlim CallbackSemaphore = new(1, 1);
 		private readonly SemaphoreSlim GamesRedeemerInBackgroundSemaphore = new(1, 1);
+
+#pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private readonly Timer HeartBeatTimer;
+#pragma warning restore CA2213 // False positive, .NET Framework can't understand DisposeAsync()
+
 		private readonly SemaphoreSlim InitializationSemaphore = new(1, 1);
 		private readonly SemaphoreSlim MessagingSemaphore = new(1, 1);
 		private readonly ConcurrentDictionary<UserNotificationsCallback.EUserNotification, uint> PastNotifications = new();
@@ -233,19 +238,34 @@ namespace ArchiSteamFarm.Steam {
 		private string? AvatarHash;
 #endif
 
+#pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private Timer? ConnectionFailureTimer;
+#pragma warning restore CA2213 // False positive, .NET Framework can't understand DisposeAsync()
+
 		private bool FirstTradeSent;
+
+#pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private Timer? GamesRedeemerInBackgroundTimer;
+#pragma warning restore CA2213 // False positive, .NET Framework can't understand DisposeAsync()
+
 		private byte HeartBeatFailures;
 		private byte InvalidPasswordFailures;
 		private EResult LastLogOnResult;
 		private DateTime LastLogonSessionReplaced;
 		private bool LibraryLocked;
 		private ulong MasterChatGroupID;
+
+#pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private Timer? PlayingWasBlockedTimer;
+#pragma warning restore CA2213 // False positive, .NET Framework can't understand DisposeAsync()
+
 		private bool ReconnectOnUserInitiated;
 		private bool SendCompleteTypesScheduled;
+
+#pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private Timer? SendItemsTimer;
+#pragma warning restore CA2213 // False positive, .NET Framework can't understand DisposeAsync()
+
 		private bool SteamParentalActive = true;
 		private SteamSaleEvent? SteamSaleEvent;
 		private string? TwoFactorCode;
@@ -897,7 +917,28 @@ namespace ArchiSteamFarm.Steam {
 			BotDatabase.AddGamesToRedeemInBackground(gamesToRedeemInBackground);
 
 			if ((GamesRedeemerInBackgroundTimer == null) && BotDatabase.HasGamesToRedeemInBackground && IsConnectedAndLoggedOn) {
-				Utilities.InBackground(() => RedeemGamesInBackground(this));
+				Utilities.InBackground(() => RedeemGamesInBackground());
+			}
+		}
+
+		internal async Task CheckOccupationStatus() {
+			StopPlayingWasBlockedTimer();
+
+			if (!IsPlayingPossible) {
+				PlayingWasBlocked = true;
+				ArchiLogger.LogGenericInfo(Strings.BotAccountOccupied);
+
+				return;
+			}
+
+			if (PlayingWasBlocked && (PlayingWasBlockedTimer == null)) {
+				InitPlayingWasBlockedTimer();
+			}
+
+			ArchiLogger.LogGenericInfo(Strings.BotAccountFree);
+
+			if (!await CardsFarmer.Resume(false).ConfigureAwait(false)) {
+				await ResetGamesPlayed().ConfigureAwait(false);
 			}
 		}
 
@@ -1004,7 +1045,7 @@ namespace ArchiSteamFarm.Steam {
 				return (optimisticDiscovery ? appID : 0, DateTime.MinValue, true);
 			}
 
-			SteamApps.PICSRequest request = new(appID, tokenCallback.AppTokens.TryGetValue(appID, out ulong accessToken) ? accessToken : 0, false);
+			SteamApps.PICSRequest request = new(appID, tokenCallback.AppTokens.TryGetValue(appID, out ulong accessToken) ? accessToken : 0);
 
 			AsyncJobMultiple<SteamApps.PICSProductInfoCallback>.ResultSet? productInfoResultSet = null;
 
@@ -1043,6 +1084,7 @@ namespace ArchiSteamFarm.Steam {
 
 				if (!string.IsNullOrEmpty(releaseState)) {
 					// We must convert this to uppercase, since Valve doesn't stick to any convention and we can have a case mismatch
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					switch (releaseState!.ToUpperInvariant()) {
 						case "RELEASED":
 							break;
@@ -1063,6 +1105,7 @@ namespace ArchiSteamFarm.Steam {
 				}
 
 				// We must convert this to uppercase, since Valve doesn't stick to any convention and we can have a case mismatch
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				switch (type!.ToUpperInvariant()) {
 					case "APPLICATION":
 					case "EPISODE":
@@ -1098,6 +1141,7 @@ namespace ArchiSteamFarm.Steam {
 					return (appID, DateTime.MinValue, true);
 				}
 
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				string[] dlcAppIDsTexts = listOfDlc!.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
 				foreach (string dlcAppIDsText in dlcAppIDsTexts) {
@@ -1120,7 +1164,7 @@ namespace ArchiSteamFarm.Steam {
 			return ((productInfoResultSet.Complete && !productInfoResultSet.Failed) || optimisticDiscovery ? appID : 0, DateTime.MinValue, true);
 		}
 
-		internal async Task<HashSet<uint>?> GetMarketableAppIDs() => await ArchiWebHandler.GetAppList().ConfigureAwait(false);
+		internal Task<HashSet<uint>?> GetMarketableAppIDs() => ArchiWebHandler.GetAppList();
 
 		internal async Task<Dictionary<uint, (uint ChangeNumber, ImmutableHashSet<uint>? AppIDs)>?> GetPackagesData(IReadOnlyCollection<uint> packageIDs) {
 			if ((packageIDs == null) || (packageIDs.Count == 0)) {
@@ -1138,7 +1182,7 @@ namespace ArchiSteamFarm.Steam {
 					continue;
 				}
 
-				packageRequests.Add(new SteamApps.PICSRequest(packageID, packageAccessToken, false));
+				packageRequests.Add(new SteamApps.PICSRequest(packageID, packageAccessToken));
 			}
 
 			if (packageRequests.Count == 0) {
@@ -1232,7 +1276,7 @@ namespace ArchiSteamFarm.Steam {
 				gameName = string.Format(CultureInfo.CurrentCulture, BotConfig.CustomGamePlayedWhileFarming!, game.AppID, game.GameName);
 			}
 
-			await ArchiHandler.PlayGames(game.PlayableAppID.ToEnumerable(), gameName).ConfigureAwait(false);
+			await ArchiHandler.PlayGames(new HashSet<uint>(1) { game.PlayableAppID }, gameName).ConfigureAwait(false);
 		}
 
 		internal async Task IdleGames(IReadOnlyCollection<Game> games) {
@@ -1246,7 +1290,7 @@ namespace ArchiSteamFarm.Steam {
 				gameName = string.Format(CultureInfo.CurrentCulture, BotConfig.CustomGamePlayedWhileFarming!, string.Join(", ", games.Select(game => game.AppID)), string.Join(", ", games.Select(game => game.GameName)));
 			}
 
-			await ArchiHandler.PlayGames(games.Select(game => game.PlayableAppID), gameName).ConfigureAwait(false);
+			await ArchiHandler.PlayGames(games.Select(game => game.PlayableAppID).ToHashSet(), gameName).ConfigureAwait(false);
 		}
 
 		internal async Task ImportKeysToRedeem(string filePath) {
@@ -1462,7 +1506,10 @@ namespace ArchiSteamFarm.Steam {
 
 			if (!string.IsNullOrEmpty(latestJson)) {
 				ASF.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.AutomaticFileMigration, configFilePath));
+
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				await SerializableFile.Write(configFilePath, latestJson!).ConfigureAwait(false);
+
 				ASF.ArchiLogger.LogGenericInfo(Strings.Done);
 			}
 
@@ -1654,6 +1701,7 @@ namespace ArchiSteamFarm.Steam {
 
 				string? key = game.Key as string;
 
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				if (string.IsNullOrEmpty(key)) {
 					invalid = true;
 					ASF.ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(key)));
@@ -1681,27 +1729,6 @@ namespace ArchiSteamFarm.Steam {
 			}
 
 			return gamesToRedeemInBackground;
-		}
-
-		private async Task CheckOccupationStatus() {
-			StopPlayingWasBlockedTimer();
-
-			if (!IsPlayingPossible) {
-				PlayingWasBlocked = true;
-				ArchiLogger.LogGenericInfo(Strings.BotAccountOccupied);
-
-				return;
-			}
-
-			if (PlayingWasBlocked && (PlayingWasBlockedTimer == null)) {
-				InitPlayingWasBlockedTimer();
-			}
-
-			ArchiLogger.LogGenericInfo(Strings.BotAccountFree);
-
-			if (!await CardsFarmer.Resume(false).ConfigureAwait(false)) {
-				await ResetGamesPlayed().ConfigureAwait(false);
-			}
 		}
 
 		private async Task Connect(bool force = false) {
@@ -1867,7 +1894,7 @@ namespace ArchiSteamFarm.Steam {
 			}
 		}
 
-		private async void HeartBeat(object? state) {
+		private async void HeartBeat(object? state = null) {
 			if (ASF.GlobalConfig == null) {
 				throw new InvalidOperationException(nameof(ASF.GlobalConfig));
 			}
@@ -1909,7 +1936,7 @@ namespace ArchiSteamFarm.Steam {
 			ArchiLogger.LogGenericInfo(Strings.BotAuthenticatorConverting);
 
 			try {
-				string json = await Compatibility.File.ReadAllTextAsync(maFilePath).ConfigureAwait(false);
+				string json = await File.ReadAllTextAsync(maFilePath).ConfigureAwait(false);
 
 				if (string.IsNullOrEmpty(json)) {
 					ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsEmpty, nameof(json)));
@@ -1969,6 +1996,7 @@ namespace ArchiSteamFarm.Steam {
 
 				string? steamLogin = await Logging.GetUserInput(ASF.EUserInputType.Login, BotName).ConfigureAwait(false);
 
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				if (string.IsNullOrEmpty(steamLogin) || !SetUserInput(ASF.EUserInputType.Login, steamLogin!)) {
 					ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(steamLogin)));
 
@@ -1981,6 +2009,7 @@ namespace ArchiSteamFarm.Steam {
 
 				string? steamPassword = await Logging.GetUserInput(ASF.EUserInputType.Password, BotName).ConfigureAwait(false);
 
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				if (string.IsNullOrEmpty(steamPassword) || !SetUserInput(ASF.EUserInputType.Password, steamPassword!)) {
 					ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(steamPassword)));
 
@@ -2013,7 +2042,7 @@ namespace ArchiSteamFarm.Steam {
 
 			if ((BotConfig.SendTradePeriod > 0) && (BotConfig.LootableTypes.Count > 0) && BotConfig.SteamUserPermissions.Values.Any(permission => permission >= BotConfig.EAccess.Master)) {
 				SendItemsTimer = new Timer(
-					async _ => await Actions.SendInventory(filterFunction: item => BotConfig.LootableTypes.Contains(item.Type)).ConfigureAwait(false),
+					OnSendItemsTimer,
 					null,
 					TimeSpan.FromHours(BotConfig.SendTradePeriod) + TimeSpan.FromSeconds(ASF.LoadBalancingDelay * Bots.Count), // Delay
 					TimeSpan.FromHours(BotConfig.SendTradePeriod) // Period
@@ -2033,7 +2062,7 @@ namespace ArchiSteamFarm.Steam {
 			await PluginsCore.OnBotInitModules(this, BotConfig.AdditionalProperties).ConfigureAwait(false);
 		}
 
-		private async void InitPermanentConnectionFailure(object? state) {
+		private async void InitPermanentConnectionFailure(object? state = null) {
 			if (!KeepRunning) {
 				return;
 			}
@@ -2178,7 +2207,7 @@ namespace ArchiSteamFarm.Steam {
 
 			if (File.Exists(sentryFilePath)) {
 				try {
-					byte[] sentryFileContent = await Compatibility.File.ReadAllBytesAsync(sentryFilePath).ConfigureAwait(false);
+					byte[] sentryFileContent = await File.ReadAllBytesAsync(sentryFilePath).ConfigureAwait(false);
 					sentryFileHash = CryptoHelper.SHAHash(sentryFileContent);
 				} catch (Exception e) {
 					ArchiLogger.LogGenericException(e);
@@ -2197,6 +2226,7 @@ namespace ArchiSteamFarm.Steam {
 				loginKey = BotDatabase.LoginKey;
 
 				// Decrypt login key if needed
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				if (!string.IsNullOrEmpty(loginKey) && (loginKey!.Length > 19) && (BotConfig.PasswordFormat != ArchiCryptoHelper.ECryptoMethod.PlainText)) {
 					loginKey = ArchiCryptoHelper.Decrypt(BotConfig.PasswordFormat, loginKey);
 				}
@@ -2231,6 +2261,7 @@ namespace ArchiSteamFarm.Steam {
 			string? password = BotConfig.DecryptedSteamPassword;
 
 			if (!string.IsNullOrEmpty(password)) {
+				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				password = Regex.Replace(password!, nonAsciiPattern, "", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
 				if (string.IsNullOrEmpty(password)) {
@@ -2672,6 +2703,7 @@ namespace ArchiSteamFarm.Steam {
 
 					string? authCode = await Logging.GetUserInput(ASF.EUserInputType.SteamGuard, BotName).ConfigureAwait(false);
 
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					if (string.IsNullOrEmpty(authCode) || !SetUserInput(ASF.EUserInputType.SteamGuard, authCode!)) {
 						ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(authCode)));
 
@@ -2685,6 +2717,7 @@ namespace ArchiSteamFarm.Steam {
 
 						string? twoFactorCode = await Logging.GetUserInput(ASF.EUserInputType.TwoFactorAuthentication, BotName).ConfigureAwait(false);
 
+						// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 						if (string.IsNullOrEmpty(twoFactorCode) || !SetUserInput(ASF.EUserInputType.TwoFactorAuthentication, twoFactorCode!)) {
 							ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(twoFactorCode)));
 
@@ -2736,6 +2769,7 @@ namespace ArchiSteamFarm.Steam {
 
 							if (!string.IsNullOrEmpty(steamParentalCode)) {
 								if (BotConfig.SteamParentalCode != steamParentalCode) {
+									// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 									if (!SetUserInput(ASF.EUserInputType.SteamParentalCode, steamParentalCode!)) {
 										ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(steamParentalCode)));
 
@@ -2749,6 +2783,7 @@ namespace ArchiSteamFarm.Steam {
 
 								steamParentalCode = await Logging.GetUserInput(ASF.EUserInputType.SteamParentalCode, BotName).ConfigureAwait(false);
 
+								// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 								if (string.IsNullOrEmpty(steamParentalCode) || !SetUserInput(ASF.EUserInputType.SteamParentalCode, steamParentalCode!)) {
 									ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(steamParentalCode)));
 
@@ -2765,6 +2800,7 @@ namespace ArchiSteamFarm.Steam {
 
 						string? steamParentalCode = await Logging.GetUserInput(ASF.EUserInputType.SteamParentalCode, BotName).ConfigureAwait(false);
 
+						// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 						if (string.IsNullOrEmpty(steamParentalCode) || !SetUserInput(ASF.EUserInputType.SteamParentalCode, steamParentalCode!)) {
 							ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(steamParentalCode)));
 
@@ -2786,7 +2822,7 @@ namespace ArchiSteamFarm.Steam {
 					Utilities.InBackground(ArchiWebHandler.HasValidApiKey);
 
 					if ((GamesRedeemerInBackgroundTimer == null) && BotDatabase.HasGamesToRedeemInBackground) {
-						Utilities.InBackground(() => RedeemGamesInBackground(this));
+						Utilities.InBackground(() => RedeemGamesInBackground());
 					}
 
 					ArchiHandler.SetCurrentMode(BotConfig.UserInterfaceMode);
@@ -2913,26 +2949,18 @@ namespace ArchiSteamFarm.Steam {
 				FileStream fileStream = File.Open(sentryFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 #pragma warning restore CA2000 // False positive, we're actually wrapping it in the using clause below exactly for that purpose
 
-#if NETFRAMEWORK
-				using (fileStream) {
-#else
 				await using (fileStream.ConfigureAwait(false)) {
-#endif
 					fileStream.Seek(callback.Offset, SeekOrigin.Begin);
 
-#if NETFRAMEWORK
-					await fileStream.WriteAsync(callback.Data, 0, callback.BytesToWrite).ConfigureAwait(false);
-#else
 					await fileStream.WriteAsync(callback.Data.AsMemory(0, callback.BytesToWrite)).ConfigureAwait(false);
-#endif
 
 					fileSize = fileStream.Length;
 					fileStream.Seek(0, SeekOrigin.Begin);
 
 #pragma warning disable CA5350 // This is actually a fair warning, but there is nothing we can do about Steam using weak cryptographic algorithms
-					using SHA1CryptoServiceProvider sha = new();
+					using SHA1 hashingAlgorithm = SHA1.Create();
 
-					sentryHash = await sha.ComputeHashAsync(fileStream).ConfigureAwait(false);
+					sentryHash = await hashingAlgorithm.ComputeHashAsync(fileStream).ConfigureAwait(false);
 #pragma warning restore CA5350 // This is actually a fair warning, but there is nothing we can do about Steam using weak cryptographic algorithms
 				}
 			} catch (Exception e) {
@@ -3004,6 +3032,8 @@ namespace ArchiSteamFarm.Steam {
 			PlayingBlocked = callback.PlayingBlocked;
 			await CheckOccupationStatus().ConfigureAwait(false);
 		}
+
+		private async void OnSendItemsTimer(object? state = null) => await Actions.SendInventory(filterFunction: item => BotConfig.LootableTypes.Contains(item.Type)).ConfigureAwait(false);
 
 		private async void OnServiceMethod(SteamUnifiedMessages.ServiceMethodNotification notification) {
 			if (notification == null) {
@@ -3115,7 +3145,7 @@ namespace ArchiSteamFarm.Steam {
 			WalletCurrency = callback.Currency;
 		}
 
-		private async void RedeemGamesInBackground(object? state) {
+		private async void RedeemGamesInBackground(object? state = null) {
 			if (!await GamesRedeemerInBackgroundSemaphore.WaitAsync(0).ConfigureAwait(false)) {
 				return;
 			}
@@ -3140,6 +3170,7 @@ namespace ArchiSteamFarm.Steam {
 						break;
 					}
 
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					PurchaseResponseCallback? result = await Actions.RedeemKey(key!).ConfigureAwait(false);
 
 					if (result == null) {
@@ -3148,6 +3179,7 @@ namespace ArchiSteamFarm.Steam {
 
 					if (((result.PurchaseResultDetail == EPurchaseResultDetail.CannotRedeemCodeFromClient) || ((result.PurchaseResultDetail == EPurchaseResultDetail.BadActivationCode) && assumeWalletKeyOnBadActivationCode)) && (WalletCurrency != ECurrencyCode.Invalid)) {
 						// If it's a wallet code, we try to redeem it first, then handle the inner result as our primary one
+						// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 						(EResult Result, EPurchaseResultDetail? PurchaseResult)? walletResult = await ArchiWebHandler.RedeemWalletKey(key!).ConfigureAwait(false);
 
 						if (walletResult != null) {
@@ -3192,9 +3224,11 @@ namespace ArchiSteamFarm.Steam {
 						break;
 					}
 
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					BotDatabase.RemoveGameToRedeemInBackground(key!);
 
 					// If user omitted the name or intentionally provided the same name as key, replace it with the Steam result
+					// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 					if (name!.Equals(key, StringComparison.OrdinalIgnoreCase) && (result.Items?.Count > 0)) {
 						name = string.Join(", ", result.Items.Values);
 					}
@@ -3210,7 +3244,7 @@ namespace ArchiSteamFarm.Steam {
 					}
 
 					try {
-						await Compatibility.File.AppendAllTextAsync(filePath, logEntry + Environment.NewLine).ConfigureAwait(false);
+						await File.AppendAllTextAsync(filePath, logEntry + Environment.NewLine).ConfigureAwait(false);
 					} catch (Exception e) {
 						ArchiLogger.LogGenericException(e);
 						ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.Content, logEntry));
@@ -3259,7 +3293,7 @@ namespace ArchiSteamFarm.Steam {
 			await ArchiHandler.PlayGames(BotConfig.GamesPlayedWhileIdle, BotConfig.CustomGamePlayedWhileIdle).ConfigureAwait(false);
 		}
 
-		private void ResetPlayingWasBlockedWithTimer(object? state) {
+		private void ResetPlayingWasBlockedWithTimer(object? state = null) {
 			PlayingWasBlocked = false;
 			StopPlayingWasBlockedTimer();
 		}
@@ -3368,6 +3402,7 @@ namespace ArchiSteamFarm.Steam {
 					switch (result) {
 						case EResult.Busy:
 						case EResult.Fail:
+						case EResult.LimitExceeded:
 						case EResult.RateLimitExceeded:
 						case EResult.ServiceUnavailable:
 						case EResult.Timeout:

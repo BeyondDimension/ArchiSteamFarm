@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 using JustArchiNET.Madness;
 #endif
 using System;
@@ -70,7 +70,7 @@ namespace ArchiSteamFarm.IPC.Integration {
 		}
 
 		[UsedImplicitly]
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 		public async Task InvokeAsync(HttpContext context, IOptions<MvcJsonOptions> jsonOptions) {
 #else
 		public async Task InvokeAsync(HttpContext context, IOptions<MvcNewtonsoftJsonOptions> jsonOptions) {

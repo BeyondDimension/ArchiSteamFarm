@@ -19,14 +19,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 using JustArchiNET.Madness;
 using Newtonsoft.Json.Converters;
 #else
 using System.IO;
-#endif
-#if NETFRAMEWORK || NETSTANDARD
-using Newtonsoft.Json.Converters;
 #endif
 using System;
 using System.Collections.Generic;
@@ -145,7 +142,7 @@ namespace ArchiSteamFarm.IPC {
 				}
 			);
 
-#if !NETFRAMEWORK
+#if !NETFRAMEWORK && !NETSTANDARD
 			app.UseRouting();
 #endif
 
@@ -161,7 +158,7 @@ namespace ArchiSteamFarm.IPC {
 			}
 
 			// Add support for mapping controllers
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 			app.UseMvcWithDefaultRoute();
 #else
 			app.UseEndpoints(endpoints => endpoints.MapControllers());

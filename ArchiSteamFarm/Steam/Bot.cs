@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 using JustArchiNET.Madness;
 using File = JustArchiNET.Madness.FileMadness.File;
 using Path = JustArchiNET.Madness.PathMadness.Path;
@@ -2949,7 +2949,7 @@ namespace ArchiSteamFarm.Steam {
 				FileStream fileStream = File.Open(sentryFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 #pragma warning restore CA2000 // False positive, we're actually wrapping it in the using clause below exactly for that purpose
 
-				await using (fileStream.ConfigureAwait(false)) {
+				await using (TaskAsyncEnumerableExtensions.ConfigureAwait(fileStream, false)) {
 					fileStream.Seek(callback.Offset, SeekOrigin.Begin);
 
 					await fileStream.WriteAsync(callback.Data.AsMemory(0, callback.BytesToWrite)).ConfigureAwait(false);

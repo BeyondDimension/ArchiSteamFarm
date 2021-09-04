@@ -21,6 +21,8 @@
 
 #if NETFRAMEWORK
 using JustArchiNET.Madness;
+#endif
+#if NETFRAMEWORK || NETSTANDARD
 using File = JustArchiNET.Madness.FileMadness.File;
 using OperatingSystem = JustArchiNET.Madness.OperatingSystemMadness.OperatingSystem;
 using Path = JustArchiNET.Madness.PathMadness.Path;
@@ -314,7 +316,7 @@ namespace ArchiSteamFarm.Core {
 					return null;
 				}
 
-				if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
+				if (OperatingSystem2.IsFreeBSD || OperatingSystem2.IsLinux || OperatingSystem2.IsMacOS) {
 					string executable = Path.Combine(SharedInfo.HomeDirectory, SharedInfo.AssemblyName);
 
 					if (File.Exists(executable)) {

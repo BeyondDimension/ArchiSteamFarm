@@ -190,10 +190,7 @@ namespace ArchiSteamFarm.Helpers {
 			}
 
 #if TARGET_GENERIC || TARGET_WINDOWS
-#if __MOBILE__
-			return null;
-#else
-			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+			if (!OperatingSystem2.IsWindows) {
 				return null;
 			}
 
@@ -243,7 +240,7 @@ namespace ArchiSteamFarm.Helpers {
 				throw new ArgumentNullException(nameof(decryptedString));
 			}
 
-			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+			if (!OperatingSystem2.IsWindows) {
 				return null;
 			}
 

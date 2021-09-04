@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 using JustArchiNET.Madness;
 using OperatingSystem = JustArchiNET.Madness.OperatingSystemMadness.OperatingSystem;
 #else
@@ -69,7 +69,7 @@ namespace ArchiSteamFarm.Core {
 					framework = "Unknown Framework";
 				}
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 				string runtime = RuntimeInformation.OSArchitecture.ToString();
 #else
 				string runtime = RuntimeInformation.RuntimeIdentifier.Trim();
@@ -95,7 +95,7 @@ namespace ArchiSteamFarm.Core {
 		private static Mutex? SingleInstance;
 
 		internal static void CoreInit(bool systemRequired) {
-			if (OperatingSystem.IsWindows()) {
+			if (OperatingSystem2.IsWindows) {
 				if (systemRequired) {
 					WindowsKeepSystemActive();
 				}
@@ -105,7 +105,7 @@ namespace ArchiSteamFarm.Core {
 					// However, older Windows versions, mainly 7/8.1 can't into UTF-8 without appropriate console font, and expecting from users to change it manually is unwanted
 					// As irrational as it can sound, those versions actually can work with unicode encoding instead, as they magically map it into proper chars despite of incorrect font
 					// See https://github.com/JustArchiNET/ArchiSteamFarm/issues/1289 for more details
-					Console.OutputEncoding = OperatingSystem.IsWindowsVersionAtLeast(10) ? Encoding.UTF8 : Encoding.Unicode;
+					Console.OutputEncoding = OperatingSystem2.IsWindowsVersionAtLeast(10) ? Encoding.UTF8 : Encoding.Unicode;
 
 					// Quick edit mode will freeze when user start selecting something on the console until the selection is cancelled
 					// Users are very often doing it accidentally without any real purpose, and we want to avoid this common issue which causes the whole process to hang
@@ -196,7 +196,7 @@ namespace ArchiSteamFarm.Core {
 				throw new ArgumentNullException(nameof(path));
 			}
 
-			if (!OperatingSystem.IsFreeBSD() && !OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) {
+			if (!OperatingSystem2.IsFreeBSD && !OperatingSystem2.IsLinux && !OperatingSystem2.IsMacOS) {
 				throw new PlatformNotSupportedException();
 			}
 
@@ -256,7 +256,7 @@ namespace ArchiSteamFarm.Core {
 
 		[SupportedOSPlatform("Windows")]
 		private static void WindowsDisableQuickEditMode() {
-			if (!OperatingSystem.IsWindows()) {
+			if (!OperatingSystem2.IsWindows) {
 				throw new PlatformNotSupportedException();
 			}
 
@@ -277,7 +277,7 @@ namespace ArchiSteamFarm.Core {
 
 		[SupportedOSPlatform("Windows")]
 		private static void WindowsKeepSystemActive() {
-			if (!OperatingSystem.IsWindows()) {
+			if (!OperatingSystem2.IsWindows) {
 				throw new PlatformNotSupportedException();
 			}
 

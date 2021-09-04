@@ -21,7 +21,6 @@
 
 	<PropertyGroup Condition=" Exists('$(MSBuildProjectDirectory)\..\..\InternalsVisibleTo.cs') And '$(TargetFramework)' != 'net48' And Exists('$(MSBuildProjectDirectory)\..\..\..\Unicorn.pfx') ">
 		<DefineConstants>SIGN_ASSEMBLY;$(DefineConstants)</DefineConstants>
-		<SignAssembly>true</SignAssembly>
 		<DelaySign>false</DelaySign>
 		<AssemblyOriginatorKeyFile>$(MSBuildProjectDirectory)\..\..\..\Unicorn.pfx</AssemblyOriginatorKeyFile>
 		<PublicSign>false</PublicSign>

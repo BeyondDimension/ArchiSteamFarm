@@ -22,11 +22,11 @@
 		<PackageVersion Include="NLog" Version="4.7.11" />
 		<PackageVersion Include="ReactiveUI" Version="16.2.1" />
 		<PackageVersion Include="OperatingSystem2" Version="1.2.0" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(TargetFramework)' != 'net48' AND ('$(TargetGeneric)' == 'true' OR '$(TargetWindows)' == 'true')">
 		<PackageVersion Include="System.IO.FileSystem.AccessControl" Version="5.0.0" />
 		<PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="5.0.0" />
+		<PackageVersion Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
+		<PackageVersion Include="System.Runtime.Handles" Version="4.3.0" />
+		<PackageVersion Include="System.Runtime.InteropServices" Version="4.3.0" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS')) Or '$(TargetFramework)' == 'net48' ">

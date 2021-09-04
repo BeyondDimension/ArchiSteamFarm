@@ -7,15 +7,24 @@
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 		<!--<TargetFrameworks>netstandard2.1;net5.0;net6.0;net48;Xamarin.iOS10;MonoAndroid11.0;net6.0-android;net6.0-macos;net6.0-maccatalyst;net6.0-ios</TargetFrameworks>-->
 		<!--<TargetFrameworks>netstandard2.1;Xamarin.iOS10;MonoAndroid11.0;net5.0</TargetFrameworks>-->
-		<TargetFrameworks>netstandard2.1;net5.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
 		<OutputType>Library</OutputType>
 		<AssemblyName>ArchiSteamFarm</AssemblyName>
 		<RootNamespace>ArchiSteamFarm</RootNamespace>
 		<RuntimeIdentifiers></RuntimeIdentifiers>
+		<DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
 	</PropertyGroup>
 
 	<PropertyGroup Condition=" Exists('$(MSBuildProjectDirectory)\..\..\InternalsVisibleTo.cs') And '$(TargetFramework)' != 'net48'">
 		<DefineConstants>EMBEDDED_IN_STEAMPLUSPLUS;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" Exists('$(MSBuildProjectDirectory)\..\..\InternalsVisibleTo.cs') And '$(TargetFramework)' != 'net48' And Exists('$(MSBuildProjectDirectory)\..\..\..\Unicorn.pfx') ">
+		<DefineConstants>SIGN_ASSEMBLY;$(DefineConstants)</DefineConstants>
+		<SignAssembly>true</SignAssembly>
+		<DelaySign>false</DelaySign>
+		<AssemblyOriginatorKeyFile>$(MSBuildProjectDirectory)\..\..\..\Unicorn.pfx</AssemblyOriginatorKeyFile>
+		<PublicSign>false</PublicSign>
 	</PropertyGroup>
 
 	<!--<PropertyGroup Condition=" $(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0')) ">
@@ -64,6 +73,9 @@
 		<PackageReference Include="OperatingSystem2" />
 		<PackageReference Include="System.IO.FileSystem.AccessControl" />
 		<PackageReference Include="System.Security.Cryptography.ProtectedData" />
+		<PackageReference Include="System.IO.FileSystem.Primitives" />
+		<PackageReference Include="System.Runtime.Handles" />
+		<PackageReference Include="System.Runtime.InteropServices" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))">

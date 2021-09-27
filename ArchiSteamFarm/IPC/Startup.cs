@@ -173,7 +173,7 @@ namespace ArchiSteamFarm.IPC {
 					options.DisplayRequestDuration();
 					options.EnableDeepLinking();
 					options.ShowExtensions();
-					options.SwaggerEndpoint(SharedInfo.ASF + "/swagger.json", SharedInfo.ASF + " API");
+					options.SwaggerEndpoint($"{SharedInfo.ASF}/swagger.json", $"{SharedInfo.ASF} API");
 				}
 			);
 		}
@@ -200,7 +200,7 @@ namespace ArchiSteamFarm.IPC {
 
 					if ((addressParts.Length != 2) || !IPAddress.TryParse(addressParts[0], out IPAddress? ipAddress) || !byte.TryParse(addressParts[1], out byte prefixLength)) {
 						ASF.ArchiLogger.LogGenericError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorIsInvalid, nameof(knownNetworkText)));
-						ASF.ArchiLogger.LogGenericDebug(nameof(knownNetworkText) + ": " + knownNetworkText);
+						ASF.ArchiLogger.LogGenericDebug($"{nameof(knownNetworkText)}: {knownNetworkText}");
 
 						continue;
 					}
@@ -243,7 +243,7 @@ namespace ArchiSteamFarm.IPC {
 				options => {
 					options.AddSecurityDefinition(
 						nameof(GlobalConfig.IPCPassword), new OpenApiSecurityScheme {
-							Description = nameof(GlobalConfig.IPCPassword) + " authentication using request headers. Check " + SharedInfo.ProjectURL + "/wiki/IPC#authentication for more info.",
+							Description = $"{nameof(GlobalConfig.IPCPassword)} authentication using request headers. Check {SharedInfo.ProjectURL}/wiki/IPC#authentication for more info.",
 							In = ParameterLocation.Header,
 							Name = ApiAuthenticationMiddleware.HeadersField,
 							Type = SecuritySchemeType.ApiKey
@@ -283,7 +283,7 @@ namespace ArchiSteamFarm.IPC {
 								Url = new Uri(SharedInfo.LicenseURL)
 							},
 
-							Title = SharedInfo.ASF + " API"
+							Title = $"{SharedInfo.ASF} API"
 						}
 					);
 

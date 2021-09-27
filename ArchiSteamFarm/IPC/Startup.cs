@@ -100,7 +100,7 @@ namespace ArchiSteamFarm.IPC {
 
 			// The default HTML file (usually index.html) is responsible for IPC GUI routing, so re-execute all non-API calls on /
 			// This must be called before default files, because we don't know the exact file name that will be used for index page
-			app.UseWhen(context => !context.Request.Path.StartsWithSegments("/Api", StringComparison.OrdinalIgnoreCase), appBuilder => appBuilder.UseStatusCodePagesWithReExecute("/"));
+			app.UseWhen(static context => !context.Request.Path.StartsWithSegments("/Api", StringComparison.OrdinalIgnoreCase), static appBuilder => appBuilder.UseStatusCodePagesWithReExecute("/"));
 
 			// Add support for default root path redirection (GET / -> GET /index.html), must come before static files
 			app.UseDefaultFiles();
@@ -108,7 +108,7 @@ namespace ArchiSteamFarm.IPC {
 			// Add support for static files (e.g. HTML, CSS and JS from IPC GUI)
 			app.UseStaticFiles(
 				new StaticFileOptions {
-					OnPrepareResponse = context => {
+					OnPrepareResponse = static context => {
 						if (context.File.Exists && !context.File.IsDirectory && !string.IsNullOrEmpty(context.File.Name)) {
 							string extension = Path.GetExtension(context.File.Name);
 
@@ -147,7 +147,7 @@ namespace ArchiSteamFarm.IPC {
 #endif
 
 			// We want to protect our API with IPCPassword and additional security, this should be called after routing, so the middleware won't have to deal with API endpoints that do not exist
-			app.UseWhen(context => context.Request.Path.StartsWithSegments("/Api", StringComparison.OrdinalIgnoreCase), appBuilder => appBuilder.UseMiddleware<ApiAuthenticationMiddleware>());
+			app.UseWhen(static context => context.Request.Path.StartsWithSegments("/Api", StringComparison.OrdinalIgnoreCase), static appBuilder => appBuilder.UseMiddleware<ApiAuthenticationMiddleware>());
 
 			string? ipcPassword = ASF.GlobalConfig != null ? ASF.GlobalConfig.IPCPassword : GlobalConfig.DefaultIPCPassword;
 
@@ -161,7 +161,7 @@ namespace ArchiSteamFarm.IPC {
 #if NETFRAMEWORK || NETSTANDARD
 			app.UseMvcWithDefaultRoute();
 #else
-			app.UseEndpoints(endpoints => endpoints.MapControllers());
+			app.UseEndpoints(static endpoints => endpoints.MapControllers());
 #endif
 
 			// Add support for swagger, responsible for automatic API documentation generation, this should be on the end, once we're done with API
@@ -169,7 +169,7 @@ namespace ArchiSteamFarm.IPC {
 
 			// Add support for swagger UI, this should be after swagger, obviously
 			app.UseSwaggerUI(
-				options => {
+				static options => {
 					options.DisplayRequestDuration();
 					options.EnableDeepLinking();
 					options.ShowExtensions();
@@ -235,12 +235,12 @@ namespace ArchiSteamFarm.IPC {
 			if (!string.IsNullOrEmpty(ipcPassword)) {
 				// We want to apply CORS policy in order to allow userscripts and other third-party integrations to communicate with ASF API
 				// We apply CORS policy only with IPCPassword set as an extra authentication measure
-				services.AddCors(options => options.AddDefaultPolicy(policyBuilder => policyBuilder.AllowAnyOrigin()));
+				services.AddCors(static options => options.AddDefaultPolicy(static policyBuilder => policyBuilder.AllowAnyOrigin()));
 			}
 
 			// Add support for swagger, responsible for automatic API documentation generation
 			services.AddSwaggerGen(
-				options => {
+				static options => {
 					options.AddSecurityDefinition(
 						nameof(GlobalConfig.IPCPassword), new OpenApiSecurityScheme {
 							Description = $"{nameof(GlobalConfig.IPCPassword)} authentication using request headers. Check {SharedInfo.ProjectURL}/wiki/IPC#authentication for more info.",
@@ -265,7 +265,7 @@ namespace ArchiSteamFarm.IPC {
 						}
 					);
 
-					options.CustomSchemaIds(type => type.GetUnifiedName());
+					options.CustomSchemaIds(static type => type.GetUnifiedName());
 					options.EnableAnnotations(true, true);
 
 					options.SchemaFilter<CustomAttributesSchemaFilter>();
@@ -337,7 +337,7 @@ namespace ArchiSteamFarm.IPC {
 #else
 			mvc.AddNewtonsoftJson(
 #endif
-				options => {
+				static options => {
 					// Fix default contract resolver to use original names and not a camel case
 					options.SerializerSettings.ContractResolver = new DefaultContractResolver();
 

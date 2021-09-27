@@ -43,7 +43,7 @@ using SteamKit2;
 
 namespace ArchiSteamFarm.Plugins {
 	internal static class PluginsCore {
-		internal static bool HasCustomPluginsLoaded => ActivePlugins?.Any(plugin => plugin is not OfficialPlugin officialPlugin || !officialPlugin.HasSameVersion()) == true;
+		internal static bool HasCustomPluginsLoaded => ActivePlugins?.Any(static plugin => plugin is not OfficialPlugin officialPlugin || !officialPlugin.HasSameVersion()) == true;
 
 		[ImportMany]
 		internal static ImmutableHashSet<IPlugin>? ActivePlugins { get; private set; }
@@ -56,7 +56,7 @@ namespace ArchiSteamFarm.Plugins {
 			IList<StringComparer> results;
 
 			try {
-				results = await Utilities.InParallel(ActivePlugins.OfType<IBotsComparer>().Select(plugin => Task.Run(() => plugin.BotsComparer))).ConfigureAwait(false);
+				results = await Utilities.InParallel(ActivePlugins.OfType<IBotsComparer>().Select(static plugin => Task.Run(() => plugin.BotsComparer))).ConfigureAwait(false);
 			} catch (Exception e) {
 				ASF.ArchiLogger.LogGenericException(e);
 
@@ -78,7 +78,7 @@ namespace ArchiSteamFarm.Plugins {
 			IList<uint> results;
 
 			try {
-				results = await Utilities.InParallel(ActivePlugins.OfType<ISteamPICSChanges>().Select(plugin => plugin.GetPreferredChangeNumberToStartFrom())).ConfigureAwait(false);
+				results = await Utilities.InParallel(ActivePlugins.OfType<ISteamPICSChanges>().Select(static plugin => plugin.GetPreferredChangeNumberToStartFrom())).ConfigureAwait(false);
 			} catch (Exception e) {
 				ASF.ArchiLogger.LogGenericException(e);
 
@@ -113,7 +113,7 @@ namespace ArchiSteamFarm.Plugins {
 				return new CrossProcessFileBasedSemaphore(resourceName);
 			}
 
-			return responses.FirstOrDefault(response => response != null) ?? new CrossProcessFileBasedSemaphore(resourceName);
+			return responses.FirstOrDefault(static response => response != null) ?? new CrossProcessFileBasedSemaphore(resourceName);
 		}
 
 		internal static bool InitPlugins() {
@@ -278,7 +278,7 @@ namespace ArchiSteamFarm.Plugins {
 				return null;
 			}
 
-			return string.Join(Environment.NewLine, responses.Where(response => !string.IsNullOrEmpty(response)));
+			return string.Join(Environment.NewLine, responses.Where(static response => !string.IsNullOrEmpty(response)));
 		}
 
 		internal static async Task OnBotDestroy(Bot bot) {
@@ -384,7 +384,7 @@ namespace ArchiSteamFarm.Plugins {
 				return false;
 			}
 
-			return responses.Any(response => response);
+			return responses.Any(static response => response);
 		}
 
 		internal static async Task OnBotInit(Bot bot) {
@@ -462,7 +462,7 @@ namespace ArchiSteamFarm.Plugins {
 				return null;
 			}
 
-			return string.Join(Environment.NewLine, responses.Where(response => !string.IsNullOrEmpty(response)));
+			return string.Join(Environment.NewLine, responses.Where(static response => !string.IsNullOrEmpty(response)));
 		}
 
 		internal static async Task OnBotSteamCallbacksInit(Bot bot, CallbackManager callbackManager) {
@@ -504,7 +504,7 @@ namespace ArchiSteamFarm.Plugins {
 				return null;
 			}
 
-			return responses.Where(response => response != null).SelectMany(handlers => handlers ?? Enumerable.Empty<ClientMsgHandler>()).ToHashSet();
+			return responses.Where(static response => response != null).SelectMany(static handlers => handlers ?? Enumerable.Empty<ClientMsgHandler>()).ToHashSet();
 		}
 
 		internal static async Task<bool> OnBotTradeOffer(Bot bot, TradeOffer tradeOffer) {
@@ -530,7 +530,7 @@ namespace ArchiSteamFarm.Plugins {
 				return false;
 			}
 
-			return responses.Any(response => response);
+			return responses.Any(static response => response);
 		}
 
 		internal static async Task OnBotTradeOfferResults(Bot bot, IReadOnlyCollection<ParseTradeResult> tradeResults) {

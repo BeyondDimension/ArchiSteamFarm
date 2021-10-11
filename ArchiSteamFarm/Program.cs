@@ -452,6 +452,10 @@ namespace ArchiSteamFarm {
 			// Unregister the process from single instancing
 			OS.UnregisterProcess();
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+			Bot.Bots?.Clear();
+			ShutdownSequenceInitialized = false;
+#endif
 			return true;
 		}
 

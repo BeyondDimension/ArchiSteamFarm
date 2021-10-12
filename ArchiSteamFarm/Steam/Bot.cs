@@ -1684,9 +1684,11 @@ namespace ArchiSteamFarm.Steam {
 				Disconnect();
 			}
 
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 			if (!skipShutdownEvent) {
 				Utilities.InBackground(Events.OnBotShutdown);
 			}
+#endif
 		}
 
 		internal static IOrderedDictionary ValidateGamesToRedeemInBackground(IOrderedDictionary gamesToRedeemInBackground) {

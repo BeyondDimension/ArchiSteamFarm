@@ -116,7 +116,7 @@ namespace ArchiSteamFarm.Core {
 			}
 
 			if (!PluginsCore.InitPlugins()) {
-				await Task.Delay(10000).ConfigureAwait(false);
+				await Task.Delay(SharedInfo.InformationDelay).ConfigureAwait(false);
 			}
 
 			WebBrowser = new WebBrowser(ArchiLogger, GlobalConfig.WebProxy, true);
@@ -172,11 +172,11 @@ namespace ArchiSteamFarm.Core {
 
 			if (Program.RestartAllowed && GlobalConfig.AutoRestart) {
 				ArchiLogger.LogGenericInfo(Strings.Restarting);
-				await Task.Delay(5000).ConfigureAwait(false);
+				await Task.Delay(SharedInfo.ShortInformationDelay).ConfigureAwait(false);
 				await Program.Restart().ConfigureAwait(false);
 			} else {
 				ArchiLogger.LogGenericInfo(Strings.Exiting);
-				await Task.Delay(5000).ConfigureAwait(false);
+				await Task.Delay(SharedInfo.ShortInformationDelay).ConfigureAwait(false);
 				await Program.Exit().ConfigureAwait(false);
 			}
 		}
@@ -243,7 +243,7 @@ namespace ArchiSteamFarm.Core {
 
 				if (!updateOverride && (GlobalConfig.UpdatePeriod == 0)) {
 					ArchiLogger.LogGenericInfo(Strings.UpdateNewVersionAvailable);
-					await Task.Delay(5000).ConfigureAwait(false);
+					await Task.Delay(SharedInfo.ShortInformationDelay).ConfigureAwait(false);
 
 					return null;
 				}
@@ -316,6 +316,7 @@ namespace ArchiSteamFarm.Core {
 					return null;
 				}
 
+#if TARGET_GENERIC || !TARGET_WINDOWS || EMBEDDED_IN_STEAMPLUSPLUS
 				if (OperatingSystem2.IsFreeBSD || OperatingSystem2.IsLinux || OperatingSystem2.IsMacOS) {
 					string executable = Path.Combine(SharedInfo.HomeDirectory, SharedInfo.AssemblyName);
 
@@ -323,6 +324,7 @@ namespace ArchiSteamFarm.Core {
 						OS.UnixSetFileAccess(executable, OS.EUnixPermission.Combined755);
 					}
 				}
+#endif
 
 				ArchiLogger.LogGenericInfo(Strings.UpdateFinished);
 
@@ -842,8 +844,6 @@ namespace ArchiSteamFarm.Core {
 				} catch (Exception e) {
 					ArchiLogger.LogGenericWarningException(e);
 					ArchiLogger.LogGenericWarning(Strings.BotSteamDirectoryInitializationFailed);
-
-					await Task.Delay(5000).ConfigureAwait(false);
 				}
 			}
 
@@ -864,7 +864,7 @@ namespace ArchiSteamFarm.Core {
 					return;
 				case > MaximumRecommendedBotsCount:
 					ArchiLogger.LogGenericWarning(string.Format(CultureInfo.CurrentCulture, Strings.WarningExcessiveBotsCount, MaximumRecommendedBotsCount));
-					await Task.Delay(10000).ConfigureAwait(false);
+					await Task.Delay(SharedInfo.InformationDelay).ConfigureAwait(false);
 
 					break;
 			}
@@ -903,7 +903,7 @@ namespace ArchiSteamFarm.Core {
 			if (SharedInfo.Version >= newVersion) {
 				if (SharedInfo.Version > newVersion) {
 					ArchiLogger.LogGenericWarning(Strings.WarningPreReleaseVersion);
-					await Task.Delay(15 * 1000).ConfigureAwait(false);
+					await Task.Delay(SharedInfo.InformationDelay).ConfigureAwait(false);
 				}
 
 				return;

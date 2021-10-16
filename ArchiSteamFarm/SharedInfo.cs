@@ -55,6 +55,7 @@ namespace ArchiSteamFarm {
 		internal const string GithubRepo = "JustArchiNET/" + AssemblyName;
 		internal const string GlobalConfigFileName = ASF + JsonConfigExtension;
 		internal const string GlobalDatabaseFileName = ASF + DatabaseExtension;
+		internal const ushort InformationDelay = 10000;
 		internal const string IPCConfigExtension = ".config";
 		internal const string IPCConfigFile = nameof(IPC) + IPCConfigExtension;
 		internal const string JsonConfigExtension = ".json";
@@ -62,11 +63,12 @@ namespace ArchiSteamFarm {
 		internal const string KeysUnusedExtension = ".unused";
 		internal const string KeysUsedExtension = ".used";
 		internal const string LicenseName = "Apache 2.0";
-		internal const string LicenseURL = "http://www.apache.org/licenses/LICENSE-2.0";
+		internal const string LicenseURL = "https://www.apache.org/licenses/LICENSE-2.0";
 		internal const string LogFile = "log.txt";
 		internal const string MobileAuthenticatorExtension = ".maFile";
 		internal const string ProjectURL = "https://github.com/" + GithubRepo;
 		internal const string SentryHashExtension = ".bin";
+		internal const ushort ShortInformationDelay = InformationDelay / 2;
 		internal const string StatisticsServer = "asf.justarchi.net";
 		internal const string UlongCompatibilityStringPrefix = "s_";
 		internal const string UpdateDirectory = "_old";

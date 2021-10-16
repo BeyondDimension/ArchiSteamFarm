@@ -60,9 +60,17 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using SteamKit2;
 using SteamKit2.Internal;
+#if EMBEDDED_IN_STEAMPLUSPLUS
+using ReactiveUI;
+#endif
+
 
 namespace ArchiSteamFarm.Steam {
-	public sealed class Bot : IAsyncDisposable {
+	public sealed class Bot :
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		ReactiveObject,
+#endif
+		IAsyncDisposable {
 		internal const ushort CallbackSleep = 500; // In milliseconds
 		internal const byte MinCardsPerBadge = 5;
 		internal const byte MinPlayingBlockedTTL = 60; // Delay in seconds added when account was occupied during our disconnect, to not disconnect other Steam client session too soon
@@ -198,7 +206,15 @@ namespace ArchiSteamFarm.Steam {
 
 		[JsonProperty]
 		[PublicAPI]
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 		public bool KeepRunning { get; private set; }
+#else
+		public bool KeepRunning {
+			get => _KeepRunning;
+			private set => this.RaiseAndSetIfChanged(ref _KeepRunning, value);
+		}
+		private bool _KeepRunning;
+#endif
 
 		[JsonProperty]
 		[PublicAPI]
@@ -231,9 +247,13 @@ namespace ArchiSteamFarm.Steam {
 
 		[JsonProperty]
 #if EMBEDDED_IN_STEAMPLUSPLUS
-		public string? AvatarHash { get; set; }
+		public string? AvatarHash;
 
-		public string? AvatarUrl { get; set; }
+		private Task<string?> _AvatarUrl;
+		public Task<string?> AvatarUrl {
+			get => _AvatarUrl;
+			set => this.RaiseAndSetIfChanged(ref _AvatarUrl, value);
+		}
 #else
 		private string? AvatarHash;
 #endif

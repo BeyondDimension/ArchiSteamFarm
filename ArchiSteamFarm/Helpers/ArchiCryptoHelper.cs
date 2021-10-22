@@ -189,7 +189,7 @@ namespace ArchiSteamFarm.Helpers {
 				throw new ArgumentNullException(nameof(encryptedString));
 			}
 
-#if TARGET_GENERIC || TARGET_WINDOWS
+#if (TARGET_GENERIC || TARGET_WINDOWS) && !__MACOS__
 			if (!OperatingSystem2.IsWindows) {
 				return null;
 			}
@@ -244,6 +244,7 @@ namespace ArchiSteamFarm.Helpers {
 				return null;
 			}
 
+#if (TARGET_GENERIC || TARGET_WINDOWS) && !__MACOS__
 			try {
 				byte[] encryptedData = ProtectedData.Protect(
 					Encoding.UTF8.GetBytes(decryptedString),
@@ -257,6 +258,9 @@ namespace ArchiSteamFarm.Helpers {
 
 				return null;
 			}
+#else
+			return null;
+#endif
 		}
 
 		public enum ECryptoMethod : byte {

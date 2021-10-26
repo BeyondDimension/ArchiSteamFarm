@@ -25,10 +25,22 @@ using HashCode = JustArchiNET.Madness.HashCodeMadness.HashCode;
 using System;
 using Newtonsoft.Json;
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+using ReactiveUI;
+#endif
+
 namespace ArchiSteamFarm.Steam.Cards {
-	public sealed class Game : IEquatable<Game> {
+	public sealed class Game :
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		ReactiveObject,
+#endif
+		IEquatable<Game> {
 		[JsonProperty]
 		public uint AppID { get; }
+
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		public string ImageUrl => $"https://steamcdn-a.akamaihd.net/steam/apps/{AppID}/header.jpg";
+#endif
 
 		[JsonProperty]
 		public string GameName { get; }

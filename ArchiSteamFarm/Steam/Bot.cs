@@ -245,18 +245,15 @@ namespace ArchiSteamFarm.Steam {
 
 		private string? AuthCode;
 
-		[JsonProperty]
 #if EMBEDDED_IN_STEAMPLUSPLUS
-		public string? AvatarHash;
-
-		private Task<string?> _AvatarUrl;
-		public Task<string?> AvatarUrl {
+		private string? _AvatarUrl;
+		public string? AvatarUrl {
 			get => _AvatarUrl;
 			set => this.RaiseAndSetIfChanged(ref _AvatarUrl, value);
 		}
-#else
-		private string? AvatarHash;
 #endif
+		[JsonProperty]
+		private string? AvatarHash;
 
 #pragma warning disable CA2213 // False positive, .NET Framework can't understand DisposeAsync()
 		private Timer? ConnectionFailureTimer;
@@ -3036,7 +3033,11 @@ namespace ArchiSteamFarm.Steam {
 
 			AvatarHash = avatarHash;
 			Nickname = callback.Name;
-
+#if EMBEDDED_IN_STEAMPLUSPLUS
+			if (!string.IsNullOrEmpty(AvatarHash)) {
+				AvatarUrl = $"https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/{AvatarHash[..2]}/{AvatarHash}_full.jpg";
+			}
+#endif
 			if (Statistics != null) {
 				Utilities.InBackground(() => Statistics.OnPersonaState(callback.Name, avatarHash));
 			}

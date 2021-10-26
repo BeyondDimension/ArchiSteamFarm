@@ -169,6 +169,19 @@ namespace ArchiSteamFarm.Core {
 					await Task.Delay(1000).ConfigureAwait(false);
 				}
 
+
+#if EMBEDDED_IN_STEAMPLUSPLUS
+				if (OperatingSystem2.IsAndroid) {
+					return true;
+					//System.NotSupportedException: Specified method is not supported.
+					// at System.Threading.Mutex..ctor (System.Boolean initiallyOwned, System.String name, System.Boolean& createdNew) [0x00006] in /Users/builder/jenkins/workspace/archive-mono/2020-02/android/release/mcs/class/corlib/System.Threading/Mutex.cs:185
+					// Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\mscorlib.dll
+					// public Mutex(bool initiallyOwned, string name, out bool createdNew) {
+					//	 throw new NotSupportedException();
+					// }
+				}
+#endif
+
 				singleInstance = new Mutex(true, uniqueName, out bool result);
 
 				if (result) {

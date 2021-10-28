@@ -69,6 +69,7 @@
 		<PackageReference Include="System.Composition" />
 		<PackageReference Include="System.Linq.Async" />
 		<PackageReference Include="ReactiveUI" />
+		<PackageReference Include="ReactiveUI.Fody"/>
 		<PackageReference Include="OperatingSystem2" />
 		<PackageReference Include="System.IO.FileSystem.AccessControl" />
 		<PackageReference Include="System.Security.Cryptography.ProtectedData" />

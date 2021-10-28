@@ -62,6 +62,7 @@ using SteamKit2;
 using SteamKit2.Internal;
 #if EMBEDDED_IN_STEAMPLUSPLUS
 using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 #endif
 
 
@@ -209,11 +210,8 @@ namespace ArchiSteamFarm.Steam {
 #if !EMBEDDED_IN_STEAMPLUSPLUS
 		public bool KeepRunning { get; private set; }
 #else
-		public bool KeepRunning {
-			get => _KeepRunning;
-			private set => this.RaiseAndSetIfChanged(ref _KeepRunning, value);
-		}
-		private bool _KeepRunning;
+		[Reactive]
+		public bool KeepRunning { get; set; }
 #endif
 
 		[JsonProperty]
@@ -246,11 +244,8 @@ namespace ArchiSteamFarm.Steam {
 		private string? AuthCode;
 
 #if EMBEDDED_IN_STEAMPLUSPLUS
-		private string? _AvatarUrl;
-		public string? AvatarUrl {
-			get => _AvatarUrl;
-			set => this.RaiseAndSetIfChanged(ref _AvatarUrl, value);
-		}
+		[Reactive]
+		public string? AvatarUrl { get; set; }
 #endif
 		[JsonProperty]
 		private string? AvatarHash;

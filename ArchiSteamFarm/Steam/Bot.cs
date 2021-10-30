@@ -205,15 +205,16 @@ namespace ArchiSteamFarm.Steam {
 		[PublicAPI]
 		public BotConfig BotConfig { get; private set; }
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		[Reactive]
+#endif
 		[JsonProperty]
 		[PublicAPI]
-#if !EMBEDDED_IN_STEAMPLUSPLUS
 		public bool KeepRunning { get; private set; }
-#else
-		[Reactive]
-		public bool KeepRunning { get; set; }
-#endif
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		[Reactive]
+#endif
 		[JsonProperty]
 		[PublicAPI]
 		public string? Nickname { get; private set; }
@@ -226,10 +227,16 @@ namespace ArchiSteamFarm.Steam {
 		[PublicAPI]
 		public ASF.EUserInputType RequiredInput { get; private set; }
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		[Reactive]
+#endif
 		[JsonProperty]
 		[PublicAPI]
 		public ulong SteamID { get; private set; }
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		[Reactive]
+#endif
 		[JsonProperty]
 		[PublicAPI]
 		public long WalletBalance { get; private set; }
@@ -245,7 +252,7 @@ namespace ArchiSteamFarm.Steam {
 
 #if EMBEDDED_IN_STEAMPLUSPLUS
 		[Reactive]
-		public string? AvatarUrl { get; set; }
+		public string? AvatarUrl { get; private set; }
 #endif
 		[JsonProperty]
 		private string? AvatarHash;

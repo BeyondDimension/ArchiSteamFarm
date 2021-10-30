@@ -43,9 +43,17 @@ using ArchiSteamFarm.Storage;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using SteamKit2;
+#if EMBEDDED_IN_STEAMPLUSPLUS
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
+#endif
 
 namespace ArchiSteamFarm.Steam.Cards {
-	public sealed class CardsFarmer : IAsyncDisposable {
+	public sealed class CardsFarmer :
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		ReactiveObject,
+#endif
+		IAsyncDisposable {
 		internal const byte DaysForRefund = 14; // In how many days since payment we're allowed to refund
 		internal const byte HoursForRefund = 2; // Up to how many hours we're allowed to play for refund
 
@@ -97,6 +105,9 @@ namespace ArchiSteamFarm.Steam.Cards {
 			}
 		}
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		[Reactive]
+#endif
 		[JsonProperty]
 		[PublicAPI]
 		public bool Paused { get; private set; }

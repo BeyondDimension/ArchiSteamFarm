@@ -27,6 +27,7 @@ using Newtonsoft.Json;
 
 #if EMBEDDED_IN_STEAMPLUSPLUS
 using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
 #endif
 
 namespace ArchiSteamFarm.Steam.Cards {
@@ -47,12 +48,17 @@ namespace ArchiSteamFarm.Steam.Cards {
 
 		internal readonly byte BadgeLevel;
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		[Reactive]
+#endif
 		[JsonProperty]
 		public ushort CardsRemaining { get; internal set; }
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		[Reactive]
+#endif
 		[JsonProperty]
 		public float HoursPlayed { get; internal set; }
-
 		internal uint PlayableAppID { get; set; }
 
 		internal Game(uint appID, string gameName, float hoursPlayed, ushort cardsRemaining, byte badgeLevel) {

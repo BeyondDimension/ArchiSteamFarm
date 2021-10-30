@@ -241,6 +241,9 @@ namespace ArchiSteamFarm.Steam {
 		[PublicAPI]
 		public long WalletBalance { get; private set; }
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		[Reactive]
+#endif
 		[JsonProperty]
 		[PublicAPI]
 		public ECurrencyCode WalletCurrency { get; private set; }

@@ -242,6 +242,10 @@ namespace ArchiSteamFarm.Steam {
 		public long WalletBalance { get; private set; }
 
 #if EMBEDDED_IN_STEAMPLUSPLUS
+		public decimal WalletBalanceM => WalletBalance / 100m;
+#endif
+
+#if EMBEDDED_IN_STEAMPLUSPLUS
 		[Reactive]
 #endif
 		[JsonProperty]

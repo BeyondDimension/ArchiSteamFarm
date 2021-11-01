@@ -135,6 +135,11 @@ namespace ArchiSteamFarm {
 
 #if !EMBEDDED_IN_STEAMPLUSPLUS
 			Console.Title = SharedInfo.ProgramIdentifier;
+#else
+			Console.CancelKeyPress += OnCancelKeyPress;
+
+			// Add support for custom encodings
+			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
 
 			// Add support for custom logging targets
@@ -428,6 +433,8 @@ namespace ArchiSteamFarm {
 			// Wait for shutdown event
 			return await ShutdownResetEvent.Task.ConfigureAwait(false);
 		}
+
+		private static async void OnCancelKeyPress(object? sender, ConsoleCancelEventArgs e) => await Exit(130).ConfigureAwait(false);
 
 		private static async void OnProcessExit(object? sender, EventArgs e) => await Shutdown().ConfigureAwait(false);
 

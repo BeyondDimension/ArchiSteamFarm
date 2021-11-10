@@ -76,6 +76,10 @@ namespace ArchiSteamFarm.Steam.Cards {
 		[PublicAPI]
 		public IReadOnlyCollection<Game> GamesToFarmReadOnly => GamesToFarm;
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		public int CardsRemaining => GamesToFarm.Sum(game => game.CardsRemaining);
+#endif
+
 		[JsonProperty]
 		[PublicAPI]
 		public TimeSpan TimeRemaining =>

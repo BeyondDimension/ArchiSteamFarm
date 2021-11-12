@@ -150,7 +150,7 @@ namespace ArchiSteamFarm.IPC {
 			app.UseRequestLocalization();
 
 			// Use routing for our API controllers, this should be called once we're done with all the static files mess
-#if !NETFRAMEWORK
+#if !NETFRAMEWORK && !NETSTANDARD
 			app.UseRouting();
 #endif
 
@@ -241,7 +241,7 @@ namespace ArchiSteamFarm.IPC {
 			// Add support for localization
 			services.AddLocalization();
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 			services.Configure<RequestLocalizationOptions>(
 #else
 			services.AddRequestLocalization(

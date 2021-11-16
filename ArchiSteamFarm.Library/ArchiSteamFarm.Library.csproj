@@ -7,7 +7,7 @@
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 		<!--<TargetFrameworks>netstandard2.1;net5.0;net6.0;net48;Xamarin.iOS10;MonoAndroid11.0;net6.0-android;net6.0-macos;net6.0-maccatalyst;net6.0-ios</TargetFrameworks>-->
 		<!--<TargetFrameworks>netstandard2.1;Xamarin.iOS10;MonoAndroid11.0;net5.0</TargetFrameworks>-->
-		<TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net6.0;net6.0-windows</TargetFrameworks>
 		<SignAssembly>false</SignAssembly>
 		<!--(SignAssembly)对此程序集进行签名会导致编译失败(CompileAvaloniaXamlTask)-->
 		<OutputType>Library</OutputType>
@@ -74,11 +74,10 @@
 		<PackageReference Include="ReactiveUI" />
 		<PackageReference Include="ReactiveUI.Fody"/>
 		<PackageReference Include="OperatingSystem2" />
-		<PackageReference Include="System.IO.FileSystem.AccessControl" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.Contains('-windows')) ">
 		<PackageReference Include="System.Security.Cryptography.ProtectedData" />
-		<PackageReference Include="System.IO.FileSystem.Primitives" />
-		<PackageReference Include="System.Runtime.Handles" />
-		<PackageReference Include="System.Runtime.InteropServices" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))">
@@ -99,6 +98,9 @@
 		<PackageReference Include="Microsoft.AspNetCore.WebSockets" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
+		<PackageReference Include="System.Runtime.Handles" />
+		<PackageReference Include="System.Runtime.InteropServices" />
+		<PackageReference Include="System.IO.FileSystem.Primitives" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0')) ">

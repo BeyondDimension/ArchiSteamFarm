@@ -220,11 +220,12 @@ namespace ArchiSteamFarm.Helpers {
 				throw new ArgumentNullException(nameof(encryptedString));
 			}
 
-#if (TARGET_GENERIC || TARGET_WINDOWS) && !__MACOS__
+#if TARGET_GENERIC
 			if (!OperatingSystem2.IsWindows) {
 				return null;
 			}
-
+#endif
+#if WINDOWS || TARGET_WINDOWS
 			try {
 				byte[] decryptedData = ProtectedData.Unprotect(
 					Convert.FromBase64String(encryptedString),
@@ -271,11 +272,12 @@ namespace ArchiSteamFarm.Helpers {
 				throw new ArgumentNullException(nameof(decryptedString));
 			}
 
+#if TARGET_GENERIC
 			if (!OperatingSystem2.IsWindows) {
 				return null;
 			}
-
-#if (TARGET_GENERIC || TARGET_WINDOWS) && !__MACOS__
+#endif
+#if WINDOWS || TARGET_WINDOWS
 			try {
 				byte[] encryptedData = ProtectedData.Protect(
 					Encoding.UTF8.GetBytes(decryptedString),

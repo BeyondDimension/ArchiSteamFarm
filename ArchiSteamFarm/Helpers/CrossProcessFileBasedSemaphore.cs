@@ -170,7 +170,7 @@ namespace ArchiSteamFarm.Helpers {
 			if (!Directory.Exists(directoryPath)) {
 				Directory.CreateDirectory(directoryPath);
 
-#if TARGET_GENERIC || TARGET_WINDOWS
+#if (TARGET_GENERIC || TARGET_WINDOWS) && !NETSTANDARD
 				if (OperatingSystem2.IsWindows) {
 					DirectoryInfo directoryInfo = new(directoryPath);
 
@@ -185,7 +185,7 @@ namespace ArchiSteamFarm.Helpers {
 				}
 #endif
 
-#if TARGET_GENERIC || !TARGET_WINDOWS
+#if (TARGET_GENERIC || !TARGET_WINDOWS) && !WINDOWS
 				if (OperatingSystem2.IsFreeBSD || OperatingSystem2.IsLinux || OperatingSystem2.IsMacOS) {
 					OS.UnixSetFileAccess(directoryPath, OS.EUnixPermission.Combined777);
 				}
@@ -195,7 +195,7 @@ namespace ArchiSteamFarm.Helpers {
 			try {
 				new FileStream(FilePath, FileMode.CreateNew).Dispose();
 
-#if TARGET_GENERIC || TARGET_WINDOWS
+#if (TARGET_GENERIC || TARGET_WINDOWS) && !NETSTANDARD
 				if (OperatingSystem2.IsWindows) {
 					FileInfo fileInfo = new(FilePath);
 
@@ -210,7 +210,7 @@ namespace ArchiSteamFarm.Helpers {
 				}
 #endif
 
-#if TARGET_GENERIC || !TARGET_WINDOWS
+#if (TARGET_GENERIC || !TARGET_WINDOWS) && !WINDOWS
 				if (OperatingSystem2.IsFreeBSD || OperatingSystem2.IsLinux || OperatingSystem2.IsMacOS) {
 					OS.UnixSetFileAccess(FilePath, OS.EUnixPermission.Combined777);
 				}

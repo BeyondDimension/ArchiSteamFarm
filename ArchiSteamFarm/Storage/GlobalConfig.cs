@@ -112,7 +112,7 @@ namespace ArchiSteamFarm.Storage {
 		public const ProtocolTypes DefaultSteamProtocols = ProtocolTypes.All;
 
 		[PublicAPI]
-		public const EUpdateChannel DefaultUpdateChannel = EUpdateChannel.Stable;
+		public const EUpdateChannel DefaultUpdateChannel = EUpdateChannel.None;
 
 		[PublicAPI]
 		public const byte DefaultUpdatePeriod = 24;

@@ -148,6 +148,10 @@ namespace ArchiSteamFarm.Core {
 		}
 
 		internal static bool IsRunningAsRoot() {
+#if EMBEDDED_IN_STEAMPLUSPLUS
+			return false;
+#endif
+
 #if TARGET_GENERIC || TARGET_WINDOWS
 			if (OperatingSystem.IsWindows()) {
 				using WindowsIdentity identity = WindowsIdentity.GetCurrent();

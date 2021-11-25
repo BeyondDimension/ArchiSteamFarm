@@ -9,6 +9,7 @@
 		<!--<TargetFrameworks>netstandard2.1;Xamarin.iOS10;MonoAndroid11.0;net5.0</TargetFrameworks>-->
 		<TargetFrameworks>netstandard2.1;net6.0;net6.0-windows</TargetFrameworks>
 		<SignAssembly>false</SignAssembly>
+		<PublicSign>false</PublicSign>
 		<!--(SignAssembly)对此程序集进行签名会导致编译失败(CompileAvaloniaXamlTask)-->
 		<OutputType>Library</OutputType>
 		<AssemblyName>ArchiSteamFarm</AssemblyName>

@@ -130,9 +130,16 @@ namespace ArchiSteamFarm.Core {
 
 			InitBotsComparer(botsComparer);
 
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 			if (!Program.Service && !GlobalConfig.Headless && !Console.IsInputRedirected) {
+				// Console.IsInputRedirected
+				// Xamarin.Android incompatible
+				// Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\System.dll
+				// public static bool IsInputRedirected
+				// throw new PlatformNotSupportedException();
 				Logging.StartInteractiveConsole();
 			}
+#endif
 
 			if (GlobalConfig.IPC) {
 				await ArchiKestrel.Start().ConfigureAwait(false);

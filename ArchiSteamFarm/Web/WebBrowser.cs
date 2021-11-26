@@ -22,6 +22,9 @@
 #if NETFRAMEWORK
 using JustArchiNET.Madness;
 #endif
+#if NETSTANDARD
+using RuntimeMadness = JustArchiNET.Madness.RuntimeMadness;
+#endif
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -128,7 +131,7 @@ namespace ArchiSteamFarm.Web {
 #if NETFRAMEWORK || NETSTANDARD
 				DecompressionMethods.Deflate | DecompressionMethods.GZip,
 #else
-                DecompressionMethods.All,
+				DecompressionMethods.All,
 #endif
 				CookieContainer,
 				webProxy,
@@ -162,7 +165,7 @@ namespace ArchiSteamFarm.Web {
 
 			HttpClient result = new(HttpClientHandler, false) {
 #if !NETFRAMEWORK && !NETSTANDARD
-                DefaultRequestVersion = HttpVersion.Version20,
+				DefaultRequestVersion = HttpVersion.Version20,
 #endif
 				Timeout = TimeSpan.FromSeconds(extendedTimeout ? ExtendedTimeoutMultiplier * ASF.GlobalConfig.ConnectionTimeout : ASF.GlobalConfig.ConnectionTimeout)
 			};
@@ -777,9 +780,15 @@ namespace ArchiSteamFarm.Web {
 			ServicePointManager.Expect100Continue = false;
 
 			// Reuse ports if possible
-#if NETFRAMEWORK
+#if NETFRAMEWORK || NETSTANDARD
 			if (!RuntimeMadness.IsRunningOnMono) {
 				ServicePointManager.ReusePort = true;
+				// Xamarin.Android incompatible
+				// Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\System.dll
+				// [MonoTODO]
+				// public static bool ReusePort
+				// get return false;
+				// set throw new NotImplementedException();
 			}
 #else
 			ServicePointManager.ReusePort = true;

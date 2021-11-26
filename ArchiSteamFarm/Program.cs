@@ -135,8 +135,11 @@ namespace ArchiSteamFarm {
 
 #if !EMBEDDED_IN_STEAMPLUSPLUS
 			Console.Title = SharedInfo.ProgramIdentifier;
+			Console.CancelKeyPress += OnCancelKeyPress; // Xamarin.Android incompatible
+			// Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\mscorlib.dll
+			// public static event ConsoleCancelEventHandler CancelKeyPress
+			// throw new PlatformNotSupportedException();
 #else
-			Console.CancelKeyPress += OnCancelKeyPress;
 
 			// Add support for custom encodings
 			Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);

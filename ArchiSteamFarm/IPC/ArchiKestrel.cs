@@ -136,7 +136,13 @@ namespace ArchiSteamFarm.IPC {
 						webBuilder.UseKestrel(static (builderContext, options) => options.Configure(builderContext.Configuration.GetSection("Kestrel")));
 					} else {
 						// Use ASF defaults for Kestrel
-						webBuilder.UseKestrel(static options => options.ListenLocalhost(1242));
+						webBuilder.UseKestrel(static options => options.ListenLocalhost(
+#if EMBEDDED_IN_STEAMPLUSPLUS
+							IArchiSteamFarmHelperService.Instance.IPCPortValue
+#else
+							1242
+#endif
+							));
 					}
 
 					// Specify Startup class for IPC

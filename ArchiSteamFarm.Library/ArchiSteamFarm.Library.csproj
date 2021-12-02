@@ -99,6 +99,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.WebSockets" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
+		<PackageReference Include="Microsoft.Extensions.Primitives" />
 		<PackageReference Include="System.Runtime.Handles" />
 		<PackageReference Include="System.Runtime.InteropServices" />
 		<PackageReference Include="System.IO.FileSystem.Primitives" />

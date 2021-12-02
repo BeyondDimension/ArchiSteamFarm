@@ -50,6 +50,10 @@ namespace ArchiSteamFarm.IPC {
 		private static IHost? KestrelWebHost;
 #endif
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		public static bool IsReady { get; private set; }
+#endif
+
 		internal static void OnNewHistoryTarget(HistoryTarget? historyTarget = null) {
 			if (HistoryTarget != null) {
 				HistoryTarget.NewHistoryEntry -= NLogController.OnNewHistoryEntry;
@@ -171,10 +175,12 @@ namespace ArchiSteamFarm.IPC {
 			}
 
 			KestrelWebHost = kestrelWebHost;
+			IsReady = true;
 			ASF.ArchiLogger.LogGenericInfo(Strings.IPCReady);
 		}
 
 		internal static async Task Stop() {
+			IsReady = false;
 			if (KestrelWebHost == null) {
 				return;
 			}

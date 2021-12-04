@@ -238,6 +238,7 @@ internal static class PluginsCore {
 			}
 		}
 
+#if !EMBEDDED_IN_STEAMPLUSPLUS // Directory.GetCurrentDirectory Not applicable to app
 		string customPluginsPath = Path.Combine(Directory.GetCurrentDirectory(), SharedInfo.PluginsDirectory);
 
 		if ((pluginsPath != customPluginsPath) && Directory.Exists(customPluginsPath)) {
@@ -251,6 +252,7 @@ internal static class PluginsCore {
 				}
 			}
 		}
+#endif
 
 		return assemblies;
 	}

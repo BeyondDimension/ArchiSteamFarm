@@ -165,8 +165,8 @@ internal sealed class CrossProcessFileBasedSemaphore : ICrossProcessSemaphore, I
 
 		if (!Directory.Exists(directoryPath)) {
 			Directory.CreateDirectory(directoryPath);
-
 			if (OperatingSystem.IsWindows()) {
+#if !OUTPUT_TYPE_LIBRARY || (OUTPUT_TYPE_LIBRARY && WINDOWS)
 				DirectoryInfo directoryInfo = new(directoryPath);
 
 				try {
@@ -177,6 +177,9 @@ internal sealed class CrossProcessFileBasedSemaphore : ICrossProcessSemaphore, I
 					// Non-critical, user might have no rights to manage the resource
 					ASF.ArchiLogger.LogGenericDebuggingException(e);
 				}
+#else
+				throw new NotSupportedException("For Windows Platform, the target framework uses net6.0-windows or net48, and other TFMs do not reference to reduce dependencies.");
+#endif
 			} else if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
 				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				OS.UnixSetFileAccess(directoryPath!, OS.EUnixPermission.Combined777);
@@ -187,6 +190,7 @@ internal sealed class CrossProcessFileBasedSemaphore : ICrossProcessSemaphore, I
 			new FileStream(FilePath, FileMode.CreateNew).Dispose();
 
 			if (OperatingSystem.IsWindows()) {
+#if !OUTPUT_TYPE_LIBRARY || (OUTPUT_TYPE_LIBRARY && WINDOWS)
 				FileInfo fileInfo = new(FilePath);
 
 				try {
@@ -197,6 +201,9 @@ internal sealed class CrossProcessFileBasedSemaphore : ICrossProcessSemaphore, I
 					// Non-critical, user might have no rights to manage the resource
 					ASF.ArchiLogger.LogGenericDebuggingException(e);
 				}
+#else
+				throw new NotSupportedException("For Windows Platform, the target framework uses net6.0-windows or net48, and other TFMs do not reference to reduce dependencies.");
+#endif
 			} else if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
 				OS.UnixSetFileAccess(FilePath, OS.EUnixPermission.Combined777);
 			}

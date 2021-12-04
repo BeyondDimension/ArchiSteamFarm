@@ -19,7 +19,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || USE_ASPNETCORE_2_2
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Converters;
 using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
@@ -143,7 +143,7 @@ internal sealed class Startup {
 		app.UseRequestLocalization();
 
 		// Use routing for our API controllers, this should be called once we're done with all the static files mess
-#if !NETFRAMEWORK
+#if !NETFRAMEWORK && !USE_ASPNETCORE_2_2
 		app.UseRouting();
 #endif
 
@@ -162,7 +162,7 @@ internal sealed class Startup {
 		app.UseWebSockets();
 
 		// Finally register proper API endpoints once we're done with routing
-#if NETFRAMEWORK
+#if NETFRAMEWORK || USE_ASPNETCORE_2_2
 		app.UseMvcWithDefaultRoute();
 #else
 		app.UseEndpoints(static endpoints => endpoints.MapControllers());
@@ -314,11 +314,16 @@ internal sealed class Startup {
 					}
 				);
 
+#if !OUTPUT_TYPE_LIBRARY
+				// AppContext.BaseDirectory in Android is null
+				// System.ArgumentNullException: paths Parameter name: One of the paths contains a null value
+				// at System.IO.Path.Combine (System.String[] paths) [0x00030] in <1b39a03c32ec46258a7821e202e0269f>:0 
 				string xmlDocumentationFile = Path.Combine(AppContext.BaseDirectory, SharedInfo.AssemblyDocumentation);
 
 				if (File.Exists(xmlDocumentationFile)) {
 					options.IncludeXmlComments(xmlDocumentationFile);
 				}
+#endif
 			}
 		);
 
@@ -341,7 +346,7 @@ internal sealed class Startup {
 
 		mvc.AddControllersAsServices();
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || USE_ASPNETCORE_2_2
 		// Use latest compatibility version for MVC
 		mvc.SetCompatibilityVersion(CompatibilityVersion.Latest);
 
@@ -361,7 +366,7 @@ internal sealed class Startup {
 					options.SerializerSettings.Formatting = Formatting.Indented;
 				}
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || USE_ASPNETCORE_2_2
 				// .NET Framework serializes Version as object by default, serialize it as string just like .NET Core
 				options.SerializerSettings.Converters.Add(new VersionConverter());
 #endif

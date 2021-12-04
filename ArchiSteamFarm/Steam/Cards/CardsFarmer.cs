@@ -40,10 +40,14 @@ using ArchiSteamFarm.Storage;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using SteamKit2;
+#if OUTPUT_TYPE_LIBRARY
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
+#endif
 
 namespace ArchiSteamFarm.Steam.Cards;
 
-public sealed class CardsFarmer : IAsyncDisposable {
+public sealed partial class CardsFarmer : IAsyncDisposable {
 	internal const byte DaysForRefund = 14; // In how many days since payment we're allowed to refund
 	internal const byte HoursForRefund = 2; // Up to how many hours we're allowed to play for refund
 
@@ -65,6 +69,10 @@ public sealed class CardsFarmer : IAsyncDisposable {
 	[JsonProperty(PropertyName = nameof(GamesToFarm))]
 	[PublicAPI]
 	public IReadOnlyCollection<Game> GamesToFarmReadOnly => GamesToFarm;
+
+#if OUTPUT_TYPE_LIBRARY
+	public int CardsRemaining => GamesToFarm.Sum(game => game.CardsRemaining);
+#endif
 
 	[JsonProperty]
 	[PublicAPI]
@@ -95,6 +103,9 @@ public sealed class CardsFarmer : IAsyncDisposable {
 		}
 	}
 
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+#endif
 	[JsonProperty]
 	[PublicAPI]
 	public bool Paused { get; private set; }
@@ -1235,3 +1246,9 @@ public sealed class CardsFarmer : IAsyncDisposable {
 		GamesToFarm.ReplaceWith(gamesToFarm);
 	}
 }
+
+#if OUTPUT_TYPE_LIBRARY
+#pragma warning disable IDE0040 // 添加可访问性修饰符
+partial class CardsFarmer : ReactiveObject { }
+#pragma warning restore IDE0040 // 添加可访问性修饰符
+#endif

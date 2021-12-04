@@ -320,11 +320,16 @@ internal sealed class Startup {
 					}
 				);
 
+#if !OUTPUT_TYPE_LIBRARY
+				// AppContext.BaseDirectory in Android is null
+				// System.ArgumentNullException: paths Parameter name: One of the paths contains a null value
+				// at System.IO.Path.Combine (System.String[] paths) [0x00030] in <1b39a03c32ec46258a7821e202e0269f>:0 
 				string xmlDocumentationFile = Path.Combine(AppContext.BaseDirectory, SharedInfo.AssemblyDocumentation);
 
 				if (File.Exists(xmlDocumentationFile)) {
 					options.IncludeXmlComments(xmlDocumentationFile);
 				}
+#endif
 			}
 		);
 

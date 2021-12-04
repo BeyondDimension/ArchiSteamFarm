@@ -235,6 +235,7 @@ public static class ArchiCryptoHelper {
 			return null;
 		}
 
+#if !OUTPUT_TYPE_LIBRARY || (OUTPUT_TYPE_LIBRARY && WINDOWS)
 		try {
 			byte[] decryptedData = ProtectedData.Unprotect(
 				Convert.FromBase64String(encryptedString),
@@ -248,6 +249,9 @@ public static class ArchiCryptoHelper {
 
 			return null;
 		}
+#else
+		throw new NotSupportedException("For Windows Platform, the target framework uses net6.0-windows or net48, and other TFMs do not reference to reduce dependencies.");
+#endif
 	}
 
 	private static string? EncryptAES(string decryptedString) {
@@ -278,6 +282,7 @@ public static class ArchiCryptoHelper {
 			return null;
 		}
 
+#if !OUTPUT_TYPE_LIBRARY || (OUTPUT_TYPE_LIBRARY && WINDOWS)
 		try {
 			byte[] encryptedData = ProtectedData.Protect(
 				Encoding.UTF8.GetBytes(decryptedString),
@@ -291,6 +296,9 @@ public static class ArchiCryptoHelper {
 
 			return null;
 		}
+#else
+		throw new NotSupportedException("For Windows Platform, the target framework uses net6.0-windows or net48, and other TFMs do not reference to reduce dependencies.");
+#endif
 	}
 
 	private static async Task<string?> ReadFromFile(string filePath) {

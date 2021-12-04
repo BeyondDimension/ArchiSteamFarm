@@ -43,6 +43,9 @@ using Newtonsoft.Json;
 using NLog;
 using NLog.Targets;
 using SteamKit2;
+#if OUTPUT_TYPE_LIBRARY
+using ArchiSteamFarm.Library;
+#endif
 
 namespace ArchiSteamFarm;
 
@@ -75,9 +78,14 @@ internal static class Program {
 		}
 
 		await Shutdown(exitCode).ConfigureAwait(false);
+#if !OUTPUT_TYPE_LIBRARY // App has its own life cycle
 		Environment.Exit(exitCode);
+#endif
 	}
 
+#if OUTPUT_TYPE_LIBRARY
+	internal static Task Restart() => IArchiSteamFarmHelperService.Instance.Restart();
+#else
 	internal static async Task Restart() {
 		if (!await InitShutdownSequence().ConfigureAwait(false)) {
 			return;
@@ -103,6 +111,7 @@ internal static class Program {
 		ShutdownResetEvent.TrySetResult(0);
 		Environment.Exit(0);
 	}
+#endif
 
 	private static void HandleCryptKeyArgument(string cryptKey) {
 		if (string.IsNullOrEmpty(cryptKey)) {
@@ -151,7 +160,7 @@ internal static class Program {
 		return true;
 	}
 
-	private static async Task Init(IReadOnlyCollection<string>? args) {
+	internal static async Task Init(IReadOnlyCollection<string>? args) {
 		AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 		AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 		TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
@@ -166,7 +175,13 @@ internal static class Program {
 		}
 #endif
 
+#if !OUTPUT_TYPE_LIBRARY
 		Console.CancelKeyPress += OnCancelKeyPress;
+		// Xamarin.Android incompatible
+		// Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\mscorlib.dll
+		// public static event ConsoleCancelEventHandler CancelKeyPress
+		// throw new PlatformNotSupportedException();
+#endif
 
 		// Add support for custom encodings
 		Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -180,7 +195,7 @@ internal static class Program {
 		}
 	}
 
-	private static async Task<bool> InitASF() {
+	internal static async Task<bool> InitASF() {
 		if (!await InitGlobalConfigAndLanguage().ConfigureAwait(false)) {
 			return false;
 		}
@@ -196,10 +211,11 @@ internal static class Program {
 		return true;
 	}
 
-	private static async Task<bool> InitCore(IReadOnlyCollection<string>? args) {
+	internal static async Task<bool> InitCore(IReadOnlyCollection<string>? args) {
 		// Init emergency loggers used for failures before setting up ones according to preference of the user
 		Logging.InitEmergencyLoggers();
 
+#if OUTPUT_TYPE_LIBRARY
 		Directory.SetCurrentDirectory(SharedInfo.HomeDirectory);
 
 		// Allow loading configs from source tree if it's a debug build
@@ -218,6 +234,7 @@ internal static class Program {
 				Directory.SetCurrentDirectory(SharedInfo.HomeDirectory);
 			}
 		}
+#endif
 
 		// Parse environment variables
 		if (!ParseEnvironmentVariables()) {
@@ -249,7 +266,9 @@ internal static class Program {
 
 		OS.CoreInit(SystemRequired);
 
+#if !OUTPUT_TYPE_LIBRARY
 		Console.Title = SharedInfo.ProgramIdentifier;
+#endif
 		ASF.ArchiLogger.LogGenericInfo(SharedInfo.ProgramIdentifier);
 
 		string? copyright = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright;
@@ -269,10 +288,12 @@ internal static class Program {
 				return false;
 			}
 
+#if !OUTPUT_TYPE_LIBRARY
 			if (OS.IsRunningAsRoot()) {
 				ASF.ArchiLogger.LogGenericWarning(Strings.WarningRunningAsRoot);
 				await Task.Delay(SharedInfo.ShortInformationDelay).ConfigureAwait(false);
 			}
+#endif
 		}
 
 		if (!Directory.Exists(SharedInfo.ConfigDirectory)) {
@@ -403,7 +424,7 @@ internal static class Program {
 		return true;
 	}
 
-	private static async Task<bool> InitShutdownSequence() {
+	internal static async Task<bool> InitShutdownSequence() {
 		if (ShutdownSequenceInitialized) {
 			return false;
 		}
@@ -434,11 +455,19 @@ internal static class Program {
 			await Task.Delay(1000).ConfigureAwait(false);
 		}
 
+#if !OUTPUT_TYPE_LIBRARY
 		// Flush all the pending writes to log files
 		LogManager.Flush();
+#endif
 
 		// Unregister the process from single instancing
 		OS.UnregisterProcess();
+
+#if OUTPUT_TYPE_LIBRARY
+		Bot.Bots?.Clear();
+		Bot.Bots = null;
+		ShutdownSequenceInitialized = false;
+#endif
 
 		return true;
 	}
@@ -453,7 +482,9 @@ internal static class Program {
 		return await ShutdownResetEvent.Task.ConfigureAwait(false);
 	}
 
+#if !OUTPUT_TYPE_LIBRARY
 	private static async void OnCancelKeyPress(object? sender, ConsoleCancelEventArgs e) => await Exit(130).ConfigureAwait(false);
+#endif
 
 #if !NETFRAMEWORK
 	private static async void OnPosixSignal(PosixSignalContext signal) {

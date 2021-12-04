@@ -109,7 +109,12 @@ public sealed class GlobalConfig {
 	public const ProtocolTypes DefaultSteamProtocols = ProtocolTypes.All;
 
 	[PublicAPI]
-	public const EUpdateChannel DefaultUpdateChannel = EUpdateChannel.Stable;
+	public const EUpdateChannel DefaultUpdateChannel =
+#if OUTPUT_TYPE_LIBRARY
+		EUpdateChannel.None;
+#else
+		EUpdateChannel.Stable;
+#endif
 
 	[PublicAPI]
 	public const byte DefaultUpdatePeriod = 24;
@@ -133,8 +138,15 @@ public sealed class GlobalConfig {
 
 	[JsonIgnore]
 	[PublicAPI]
-	public WebProxy? WebProxy {
+	public IWebProxy? WebProxy {
 		get {
+//#if OUTPUT_TYPE_LIBRARY
+//			IWebProxy? sppGlobalProxy = System.Net.Http.GeneralHttpClientFactory.DefaultProxy;
+//			if (sppGlobalProxy != null) {
+//				return sppGlobalProxy;
+//			}
+//#endif
+
 			if (BackingWebProxy != null) {
 				return BackingWebProxy;
 			}

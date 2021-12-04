@@ -1,0 +1,235 @@
+<Project Sdk="MSBuild.Sdk.Extras">
+	<PropertyGroup>
+		<DefaultItemExcludes>$(DefaultItemExcludes);config/**;debug/**;logs/**;overlay/**</DefaultItemExcludes>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
+		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+		<TargetFrameworks>netstandard2.1;net6.0;net6.0-android;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net6.0-windows;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(TargetFrameworks);net6.0-ios;net6.0-maccatalyst</TargetFrameworks>
+		<SignAssembly>false</SignAssembly>
+		<PublicSign>false</PublicSign>
+		<OutputType>Library</OutputType>
+		<AssemblyName>ArchiSteamFarm</AssemblyName>
+		<RootNamespace>ArchiSteamFarm</RootNamespace>
+		<RuntimeIdentifiers></RuntimeIdentifiers>
+		<DisableImplicitNamespaceImports>false</DisableImplicitNamespaceImports>
+		<DefineConstants>OUTPUT_TYPE_LIBRARY;$(DefineConstants)</DefineConstants>
+		<NoWarn>IDE0160;IDE0005;NU1507</NoWarn>
+		<PackageProjectUrl>https://github.com/BeyondDimension/ArchiSteamFarm</PackageProjectUrl>
+		<PackageReleaseNotes>https://github.com/JustArchiNET/ArchiSteamFarm/releases</PackageReleaseNotes>
+		<RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
+		<PackageIcon>ASF_184x184.png</PackageIcon>
+		<PackageId>ArchiSteamFarm.Library</PackageId>
+		<Version>5.2.6.3-preview.220608</Version>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" $(TargetFramework.StartsWith('netstandard')) OR $(TargetFramework.StartsWith('MonoAndroid')) OR $(TargetFramework.StartsWith('Xamarin')) ">
+		<DefineConstants>NETFRAMEWORK;NETSTANDARD2_1_OR_GREATER;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" $(TargetFramework.StartsWith('net6')) ">
+		<DefineConstants>NET5_0_OR_GREATER;NET6_0_OR_GREATER;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" $(TargetFramework.Contains('-windows')) ">
+		<DefineConstants>WINDOWS;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" $(TargetFramework.Contains('-android')) ">
+		<DefineConstants>NET6_0_ANDROID;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" $(TargetFramework.Contains('-android')) OR $(TargetFramework.Contains('-ios')) OR $(TargetFramework.Contains('-maccatalyst')) ">
+		<DefineConstants>USE_ASPNETCORE_2_2;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+
+	 <ItemGroup>
+      <None Include="..\resources\ASF_184x184.png" Pack="true" PackagePath=""/>
+      <None Include="..\README.md" Pack="true" PackagePath=""/>
+  </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AngleSharp.XPath" />
+		<PackageReference Include="ConfigureAwaitChecker.Analyzer" PrivateAssets="all" />
+		<PackageReference Include="CryptSharpStandard" />
+		<PackageReference Include="Humanizer" />
+		<PackageReference Include="JetBrains.Annotations" />
+		<PackageReference Include="Markdig.Signed" />
+		<PackageReference Include="Newtonsoft.Json" />
+		<PackageReference Include="Nito.AsyncEx.Coordination" />
+		<PackageReference Include="SteamKit2" />
+		<PackageReference Include="System.Composition" />
+		<PackageReference Include="System.Linq.Async" />
+		<PackageReference Include="zxcvbn-core" />
+		<PackageReference Include="ReactiveUI" />
+		<PackageReference Include="ReactiveUI.Fody" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+		<PackageReference Include="SharpZipLib" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" !($(TargetFramework.Contains('-android')) OR $(TargetFramework.Contains('-ios')) OR $(TargetFramework.Contains('-maccatalyst'))) ">
+		<PackageReference Include="Swashbuckle.AspNetCore.Annotations" />
+		<PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" />
+		<PackageReference Include="NLog.Web.AspNetCore" />
+		<PackageReference Include="Swashbuckle.AspNetCore" />
+	</ItemGroup>
+
+	<PropertyGroup Condition=" $(TargetFramework.Contains('-android')) OR $(TargetFramework.Contains('-ios')) OR $(TargetFramework.Contains('-maccatalyst')) ">
+		<OpenApiGenerateDocumentsOnBuild Condition=" '$(OpenApiGenerateDocumentsOnBuild)' == '' ">false</OpenApiGenerateDocumentsOnBuild>
+		<!-- $(NuGetPackageRoot)\swashbuckle.aspnetcore\6.3.0\build\Swashbuckle.AspNetCore.props -->
+	</PropertyGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.Contains('-android')) OR $(TargetFramework.Contains('-ios')) OR $(TargetFramework.Contains('-maccatalyst')) ">
+		<PackageReference Include="NLog.Extensions.Logging" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.ApiExplorer" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.DataAnnotations" />
+		<PackageReference Include="Microsoft.AspNetCore.Routing" />
+		<PackageReference Include="Microsoft.AspNetCore.StaticFiles" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" />
+		<PackageReference Include="Microsoft.OpenApi" />
+		<!--<Reference Include="NLog.Web.AspNetCore">
+	    <HintPath>$(NuGetPackageRoot)\nlog.web.aspnetcore\4.14.0\lib\netstandard2.0\NLog.Web.AspNetCore.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Swashbuckle.AspNetCore.Annotations">
+	    <HintPath>$(NuGetPackageRoot)\swashbuckle.aspnetcore.annotations\6.3.0\lib\netstandard2.0\Swashbuckle.AspNetCore.Annotations.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Swashbuckle.AspNetCore.Newtonsoft">
+	    <HintPath>$(NuGetPackageRoot)\swashbuckle.aspnetcore.newtonsoft\6.3.0\lib\netstandard2.0\Swashbuckle.AspNetCore.Newtonsoft.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Swashbuckle.AspNetCore.Swagger">
+	    <HintPath>$(NuGetPackageRoot)\swashbuckle.aspnetcore.swagger\6.3.0\lib\netstandard2.0\Swashbuckle.AspNetCore.Swagger.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Swashbuckle.AspNetCore.SwaggerGen">
+	    <HintPath>$(NuGetPackageRoot)\swashbuckle.aspnetcore.swaggergen\6.3.0\lib\netstandard2.0\Swashbuckle.AspNetCore.SwaggerGen.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Swashbuckle.AspNetCore.SwaggerUI">
+	    <HintPath>$(NuGetPackageRoot)\swashbuckle.aspnetcore.swaggerui\6.3.0\lib\netstandard2.0\Swashbuckle.AspNetCore.SwaggerUI.dll</HintPath>
+	  </Reference>-->
+		<PackageReference Include="AspNetCore2.NETStandard.Swashbuckle.AspNetCore.Annotations" />
+		<PackageReference Include="AspNetCore2.NETStandard.Swashbuckle.AspNetCore.Newtonsoft" />
+		<PackageReference Include="AspNetCore2.NETStandard.NLog.Web.AspNetCore" />
+		<PackageReference Include="AspNetCore2.NETStandard.Swashbuckle.AspNetCore" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.Contains('-windows')) ">
+		<PackageReference Include="System.Security.Cryptography.ProtectedData" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))">
+		<Reference Include="System.ComponentModel.DataAnnotations" />
+		<Reference Include="System.IO.Compression" />
+		<Reference Include="System.IO.Compression.FileSystem" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS')) Or $(TargetFramework.Contains('-android')) OR $(TargetFramework.Contains('-ios')) OR $(TargetFramework.Contains('-maccatalyst')) ">
+		<PackageReference Include="Microsoft.AspNetCore.Cors" />
+		<PackageReference Include="Microsoft.AspNetCore.Diagnostics" />
+		<PackageReference Include="Microsoft.AspNetCore.HttpOverrides" />
+		<PackageReference Include="Microsoft.AspNetCore.Localization" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" />
+		<PackageReference Include="Microsoft.AspNetCore.ResponseCaching" />
+		<PackageReference Include="Microsoft.AspNetCore.ResponseCompression" />
+		<PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" />
+		<PackageReference Include="Microsoft.AspNetCore.WebSockets" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
+		<PackageReference Include="Microsoft.Net.Http.Headers" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS')) ">
+		<PackageReference Include="JustArchiNET.Madness" />
+		<Using Include="JustArchiNET.Madness" />
+		<Using Include="JustArchiNET.Madness.ArgumentNullExceptionMadness.ArgumentNullException" Alias="ArgumentNullException" />
+		<Using Include="JustArchiNET.Madness.ArrayMadness.Array" Alias="Array" />
+		<Using Include="JustArchiNET.Madness.ConvertMadness.Convert" Alias="Convert" />
+		<Using Include="JustArchiNET.Madness.EnumMadness.Enum" Alias="Enum" />
+		<Using Include="JustArchiNET.Madness.EnvironmentMadness.Environment" Alias="Environment" />
+		<Using Include="JustArchiNET.Madness.FileMadness.File" Alias="File" />
+		<Using Include="JustArchiNET.Madness.HashCodeMadness.HashCode" Alias="HashCode" />
+		<Using Include="JustArchiNET.Madness.HMACSHA1Madness.HMACSHA1" Alias="HMACSHA1" />
+		<Using Include="JustArchiNET.Madness.OperatingSystemMadness.OperatingSystem" Alias="OperatingSystem" />
+		<Using Include="JustArchiNET.Madness.PathMadness.Path" Alias="Path" />
+		<Using Include="JustArchiNET.Madness.RandomMadness.Random" Alias="Random" />
+		<Using Include="JustArchiNET.Madness.SHA256Madness.SHA256" Alias="SHA256" />
+		<Using Include="JustArchiNET.Madness.SHA512Madness.SHA512" Alias="SHA512" />
+		<Using Include="JustArchiNET.Madness.StringMadness.String" Alias="String" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS')) Or $(TargetFramework.StartsWith('netstandard')) ">
+		<Using Include="System.Runtime.Versioning.SupportedOSPlatformAttribute" Alias="SupportedOSPlatformAttribute" />
+		<PackageReference Include="OperatingSystem2" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" $(TargetFramework.StartsWith('net')) And $(TargetFramework.EndsWith('.0')) ">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<TrimmerRootDescriptor Include="..\ArchiSteamFarm\TrimmerRoots.xml" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="..\ArchiSteamFarm\Localization\*.resx">
+			<LinkBase>Localization</LinkBase>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Localization\Strings.resx">
+			<Generator>PublicResXFileCodeGenerator</Generator>
+			<LastGenOutput>Strings.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Library\Resource.Designer.cs">
+			<DesignTime>True</DesignTime>
+		</Compile>
+		<Compile Update="Localization\Strings.Designer.cs">
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Strings.resx</DependentUpon>
+			<DesignTime>True</DesignTime>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Include="..\ArchiSteamFarm\**\*.cs" />
+		<Compile Remove="..\ArchiSteamFarm\obj\**" />
+		<Compile Remove="obj\**" />
+		<EmbeddedResource Remove="obj\**" />
+		<None Remove="obj\**" />
+		<Compile Remove="..\ArchiSteamFarm\config\**" />
+		<Compile Remove="config\**" />
+		<EmbeddedResource Remove="config\**" />
+		<None Remove="config\**" />
+		<Compile Remove="..\ArchiSteamFarm\debug\**" />
+		<Compile Remove="debug\**" />
+		<EmbeddedResource Remove="debug\**" />
+		<None Remove="debug\**" />
+		<Compile Remove="..\ArchiSteamFarm\logs\**" />
+		<Compile Remove="logs\**" />
+		<EmbeddedResource Remove="logs\**" />
+		<None Remove="logs\**" />
+		<Compile Remove="..\ArchiSteamFarm\overlay\**" />
+		<Compile Remove="overlay\**" />
+		<EmbeddedResource Remove="overlay\**" />
+		<None Remove="overlay\**" />
+	</ItemGroup>
+
+	<Target Name="VS16_RemoveSystemMemoryAndSystemBuffers" BeforeTargets="FindReferenceAssembliesForReferences" Condition=" $(TargetFramework.StartsWith('Xamarin.iOS')) And '$(MSBuildVersion)' &gt;= '16.0' ">
+		<ItemGroup>
+			<_ReferencePathToRemove Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)'=='System.Memory' Or '%(ReferencePath.NuGetPackageId)'=='System.Buffers'" />
+			<ReferencePath Remove="@(_ReferencePathToRemove)" />
+		</ItemGroup>
+	</Target>
+
+	<!--<Target Name="VS16_RemoveSystemIOFileSystemAccessControlAndSystemSecurityAccessControl" BeforeTargets="FindReferenceAssembliesForReferences" Condition=" ($(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS'))) And '$(MSBuildVersion)' &gt;= '16.0' ">
+		<ItemGroup>
+			<_ReferencePathToRemove Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)'=='System.IO.FileSystem.AccessControl' Or '%(ReferencePath.NuGetPackageId)'=='System.Security.AccessControl'" />
+			<ReferencePath Remove="@(_ReferencePathToRemove)" />
+		</ItemGroup>
+	</Target>-->
+</Project>

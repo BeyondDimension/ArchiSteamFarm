@@ -19,7 +19,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || USE_ASPNETCORE_2_2
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 #endif
@@ -35,7 +36,7 @@ using Newtonsoft.Json;
 namespace ArchiSteamFarm.IPC;
 
 internal static class WebUtilities {
-#if NETFRAMEWORK
+#if NETFRAMEWORK || USE_ASPNETCORE_2_2
 	internal static IMvcCoreBuilder AddControllers(this IServiceCollection services) {
 		if (services == null) {
 			throw new ArgumentNullException(nameof(services));

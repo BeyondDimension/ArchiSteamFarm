@@ -44,7 +44,7 @@ internal static class Logging {
 	internal const string NLogConfigurationFile = "NLog.config";
 
 	private const byte ConsoleResponsivenessDelay = 250; // In milliseconds
-	private const string GeneralLayout = $@"${{date:format=yyyy-MM-dd HH\:mm\:ss}}|${{processname}}-${{processid}}|${{level:uppercase=true}}|{LayoutMessage}";
+	internal const string GeneralLayout = $@"${{date:format=yyyy-MM-dd HH\:mm\:ss}}|${{processname}}-${{processid}}|${{level:uppercase=true}}|{LayoutMessage}";
 	private const string LayoutMessage = @"${logger}|${message}${onexception:inner= ${exception:format=toString,Data}}";
 
 	private static readonly ConcurrentHashSet<LoggingRule> ConsoleLoggingRules = new();
@@ -53,7 +53,11 @@ internal static class Logging {
 	private static string Backspace => "\b \b";
 
 	private static bool IsUsingCustomConfiguration;
-	private static bool IsWaitingForUserInput;
+	internal static bool IsWaitingForUserInput { get; private set; }
+
+#if OUTPUT_TYPE_LIBRARY
+	public static Func<bool, Task<string>>? GetUserInputFunc { get; set; }
+#endif
 
 	internal static void EnableTraceLogging() {
 		if (IsUsingCustomConfiguration || (LogManager.Configuration == null)) {
@@ -97,28 +101,53 @@ internal static class Logging {
 			try {
 				switch (userInputType) {
 					case ASF.EUserInputType.Login:
+#if OUTPUT_TYPE_LIBRARY
+						ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamLogin, botName));
+						result = await ConsoleShellReadLine(false).ConfigureAwait(false);
+#else
 						Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamLogin, botName));
 						result = ConsoleReadLine();
+#endif
 
 						break;
 					case ASF.EUserInputType.Password:
+#if OUTPUT_TYPE_LIBRARY
+						ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamPassword, botName));
+						result = await ConsoleShellReadLine(true).ConfigureAwait(false);
+#else
 						Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamPassword, botName));
 						result = ConsoleReadLineMasked();
+#endif
 
 						break;
 					case ASF.EUserInputType.SteamGuard:
+#if OUTPUT_TYPE_LIBRARY
+						ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamGuard, botName));
+						result = await ConsoleShellReadLine(false).ConfigureAwait(false);
+#else
 						Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamGuard, botName));
 						result = ConsoleReadLine();
+#endif
 
 						break;
 					case ASF.EUserInputType.SteamParentalCode:
+#if OUTPUT_TYPE_LIBRARY
+						ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteamParentalCode, botName));
+						result = await ConsoleShellReadLine(true).ConfigureAwait(false);
+#else
 						Console.Write(Bot.FormatBotResponse(Strings.UserInputSteamParentalCode, botName));
 						result = ConsoleReadLineMasked();
+#endif
 
 						break;
 					case ASF.EUserInputType.TwoFactorAuthentication:
+#if OUTPUT_TYPE_LIBRARY
+						ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputSteam2FA, botName));
+						result = await ConsoleShellReadLine(false).ConfigureAwait(false);
+#else
 						Console.Write(Bot.FormatBotResponse(Strings.UserInputSteam2FA, botName));
 						result = ConsoleReadLine();
+#endif
 
 						break;
 					default:
@@ -126,10 +155,15 @@ internal static class Logging {
 
 						return null;
 				}
+#if !OUTPUT_TYPE_LIBRARY
+				try {
+					if (!Console.IsOutputRedirected) {
+						Console.Clear(); // For security purposes
+					}
+				} catch (PlatformNotSupportedException) {
 
-				if (!Console.IsOutputRedirected) {
-					Console.Clear(); // For security purposes
 				}
+#endif
 			} catch (Exception e) {
 				OnUserInputEnd();
 				ASF.ArchiLogger.LogGenericException(e);
@@ -147,6 +181,7 @@ internal static class Logging {
 	}
 
 	internal static void InitCoreLoggers(bool uniqueInstance) {
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 		try {
 			if ((Directory.GetCurrentDirectory() != AppContext.BaseDirectory) && File.Exists(NLogConfigurationFile)) {
 				IsUsingCustomConfiguration = true;
@@ -156,6 +191,7 @@ internal static class Logging {
 		} catch (Exception e) {
 			ASF.ArchiLogger.LogGenericException(e);
 		}
+#endif
 
 		if (IsUsingCustomConfiguration) {
 			InitConsoleLoggers();
@@ -224,7 +260,11 @@ internal static class Logging {
 
 		HistoryTarget? historyTarget = LogManager.Configuration.AllTargets.OfType<HistoryTarget>().FirstOrDefault();
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		if (historyTarget == null) {
+#else
 		if ((historyTarget == null) && !IsUsingCustomConfiguration) {
+#endif
 			historyTarget = new HistoryTarget("History") {
 				Layout = GeneralLayout,
 				MaxCount = 20
@@ -239,10 +279,12 @@ internal static class Logging {
 		ArchiKestrel.OnNewHistoryTarget(historyTarget);
 	}
 
+#if !OUTPUT_TYPE_LIBRARY
 	internal static void StartInteractiveConsole() {
 		Utilities.InBackground(HandleConsoleInteractively, true);
 		ASF.ArchiLogger.LogGenericInfo(Strings.InteractiveConsoleEnabled);
 	}
+#endif
 
 	private static async Task BeepUntilCanceled(CancellationToken cancellationToken, byte secondsDelay = 30) {
 		if (secondsDelay == 0) {
@@ -259,6 +301,21 @@ internal static class Logging {
 			Console.Beep();
 		}
 	}
+
+#if OUTPUT_TYPE_LIBRARY
+	private static async Task<string?> ConsoleShellReadLine(bool isMask) {
+		using CancellationTokenSource cts = new();
+
+		try {
+			//CancellationToken token = cts.Token;
+			// 是否定时响起蜂鸣器提示音
+			//Utilities.InBackground(() => BeepUntilCanceled(token));
+			return GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(isMask).ConfigureAwait(false) : null;
+		} finally {
+			cts.Cancel();
+		}
+	}
+#else
 
 	private static string? ConsoleReadLine() {
 		using CancellationTokenSource cts = new();
@@ -310,7 +367,9 @@ internal static class Logging {
 			cts.Cancel();
 		}
 	}
+#endif
 
+#if !OUTPUT_TYPE_LIBRARY
 	private static async Task HandleConsoleInteractively() {
 		while (!Program.ShutdownSequenceInitialized) {
 			try {
@@ -388,6 +447,7 @@ internal static class Logging {
 			}
 		}
 	}
+#endif
 
 	private static void InitConsoleLoggers() {
 		ConsoleLoggingRules.Clear();
@@ -399,6 +459,12 @@ internal static class Logging {
 
 	private static void OnConfigurationChanged(object? sender, LoggingConfigurationChangedEventArgs e) {
 		ArgumentNullException.ThrowIfNull(e);
+
+#if OUTPUT_TYPE_LIBRARY
+		if (LogManager.Configuration == null) {
+			return;
+		}
+#endif
 
 		InitConsoleLoggers();
 

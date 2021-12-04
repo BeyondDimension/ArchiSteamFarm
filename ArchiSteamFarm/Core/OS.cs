@@ -140,11 +140,17 @@ internal static class OS {
 	}
 
 	internal static bool IsRunningAsRoot() {
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		return false;
+#endif
+
+#if !__ANDROID__ && !__IOS__
 		if (OperatingSystem.IsWindows()) {
 			using WindowsIdentity identity = WindowsIdentity.GetCurrent();
 
 			return identity.IsSystem || new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
 		}
+#endif
 
 		if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) {
 			return NativeMethods.GetEUID() == 0;
@@ -159,10 +165,32 @@ internal static class OS {
 			return false;
 		}
 
+#if OUTPUT_TYPE_LIBRARY
+#if NET5_0_OR_GREATER
+		if (OperatingSystem.IsAndroid()) {
+#else
+		if (OperatingSystem2.IsAndroid) {
+#endif
+			// System.NotSupportedException: Specified method is not supported.
+			// at System.Threading.Mutex..ctor (System.Boolean initiallyOwned, System.String name, System.Boolean& createdNew) [0x00006] in /Users/builder/jenkins/workspace/archive-mono/2020-02/android/release/mcs/class/corlib/System.Threading/Mutex.cs:185
+			// Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\mscorlib.dll
+			// public Mutex(bool initiallyOwned, string name, out bool createdNew) {
+			//	 throw new NotSupportedException();
+			// }
+			return true;
+		}
+#endif
+
 		// The only purpose of using hashing here is to cut on a potential size of the resource name - paths can be really long, and we almost certainly have some upper limit on the resource name we can allocate
 		// At the same time it'd be the best if we avoided all special characters, such as '/' found e.g. in base64, as we can't be sure that it's not a prohibited character in regards to native OS implementation
 		// Because of that, SHA256 is sufficient for our case, as it generates alphanumeric characters only, and is barely 256-bit long. We don't need any kind of complex cryptography or collision detection here, any hashing will do, and the shorter the better
-		string uniqueName = $"Global\\{GetOsResourceName(nameof(SingleInstance))}-{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Directory.GetCurrentDirectory())))}";
+		string currentDirectory;
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		currentDirectory = ASFPathHelper.AppDataDirectory;
+#else
+		currentDirectory = Directory.GetCurrentDirectory();
+#endif
+		string uniqueName = $"Global\\{GetOsResourceName(nameof(SingleInstance))}-{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(currentDirectory)))}";
 
 		Mutex? singleInstance = null;
 

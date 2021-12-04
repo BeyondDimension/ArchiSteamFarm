@@ -46,6 +46,10 @@ internal static class ArchiKestrel {
 
 	private static IHost? KestrelWebHost;
 
+#if OUTPUT_TYPE_LIBRARY
+	public static bool IsReady { get; private set; }
+#endif
+
 	internal static void OnNewHistoryTarget(HistoryTarget? historyTarget = null) {
 		if (HistoryTarget != null) {
 			HistoryTarget.NewHistoryEntry -= NLogController.OnNewHistoryEntry;
@@ -68,8 +72,12 @@ internal static class ArchiKestrel {
 		// The order of dependency injection matters, pay attention to it
 		HostBuilder builder = new();
 
+#if EMBEDDED_IN_STEAMPLUSPLUS
+		string websiteDirectory = ASFPathHelper.WebsiteDirectory;
+#else
 		string customDirectory = Path.Combine(Directory.GetCurrentDirectory(), SharedInfo.WebsiteDirectory);
 		string websiteDirectory = Directory.Exists(customDirectory) ? customDirectory : Path.Combine(AppContext.BaseDirectory, SharedInfo.WebsiteDirectory);
+#endif
 
 		// Set default content root
 		builder.UseContentRoot(SharedInfo.HomeDirectory);
@@ -126,7 +134,13 @@ internal static class ArchiKestrel {
 					webBuilder.UseKestrel(static (builderContext, options) => options.Configure(builderContext.Configuration.GetSection("Kestrel")));
 				} else {
 					// Use ASF defaults for Kestrel
-					webBuilder.UseKestrel(static options => options.ListenLocalhost(1242));
+					webBuilder.UseKestrel(static options => options.ListenLocalhost(
+#if EMBEDDED_IN_STEAMPLUSPLUS
+						IArchiSteamFarmHelperService.Instance.IPCPortValue
+#else
+						1242
+#endif
+						));
 				}
 
 				// Specify Startup class for IPC
@@ -151,10 +165,16 @@ internal static class ArchiKestrel {
 		}
 
 		KestrelWebHost = kestrelWebHost;
+#if OUTPUT_TYPE_LIBRARY
+		IsReady = true;
+#endif
 		ASF.ArchiLogger.LogGenericInfo(Strings.IPCReady);
 	}
 
 	internal static async Task Stop() {
+#if OUTPUT_TYPE_LIBRARY
+		IsReady = false;
+#endif
 		if (KestrelWebHost == null) {
 			return;
 		}

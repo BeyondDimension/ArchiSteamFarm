@@ -30,7 +30,11 @@ namespace ArchiSteamFarm;
 
 public static class SharedInfo {
 	[PublicAPI]
+#if EMBEDDED_IN_STEAMPLUSPLUS
+	public static readonly string ConfigDirectory = HomeDirectory + Path.DirectorySeparatorChar + "config";
+#else
 	public const string ConfigDirectory = "config";
+#endif
 
 	internal const ulong ArchiSteamID = 76561198006963719;
 	internal const string ArchivalLogFile = "log.{#}.txt";
@@ -40,7 +44,11 @@ public static class SharedInfo {
 	internal const string AssemblyDocumentation = $"{AssemblyName}.xml";
 	internal const string AssemblyName = nameof(ArchiSteamFarm);
 	internal const string DatabaseExtension = ".db";
+#if EMBEDDED_IN_STEAMPLUSPLUS
+	internal static readonly string DebugDirectory = HomeDirectory + Path.DirectorySeparatorChar + "debug";
+#else
 	internal const string DebugDirectory = "debug";
+#endif
 	internal const string EnvironmentVariableCryptKey = $"{ASF}_CRYPTKEY";
 	internal const string EnvironmentVariableNetworkGroup = $"{ASF}_NETWORK_GROUP";
 	internal const string EnvironmentVariablePath = $"{ASF}_PATH";
@@ -60,7 +68,11 @@ public static class SharedInfo {
 	internal const string LogFile = "log.txt";
 	internal const string LolcatCultureName = "qps-Ploc";
 	internal const string MobileAuthenticatorExtension = ".maFile";
+#if EMBEDDED_IN_STEAMPLUSPLUS
+	internal static readonly string PluginsDirectory = HomeDirectory + Path.DirectorySeparatorChar + "plugins";
+#else
 	internal const string PluginsDirectory = "plugins";
+#endif
 	internal const string ProjectURL = $"https://github.com/{GithubRepo}";
 	internal const string SentryHashExtension = ".bin";
 	internal const ushort ShortInformationDelay = InformationDelay / 2;
@@ -70,6 +82,9 @@ public static class SharedInfo {
 
 	internal static string HomeDirectory {
 		get {
+#if EMBEDDED_IN_STEAMPLUSPLUS
+			return ASFPathHelper.AppDataDirectory;
+#else
 			if (!string.IsNullOrEmpty(CachedHomeDirectory)) {
 				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				return CachedHomeDirectory!;
@@ -83,6 +98,7 @@ public static class SharedInfo {
 			CachedHomeDirectory = Path.GetFileNameWithoutExtension(OS.ProcessFileName) == AssemblyName ? Path.GetDirectoryName(OS.ProcessFileName) ?? AppContext.BaseDirectory : AppContext.BaseDirectory;
 
 			return CachedHomeDirectory;
+#endif
 		}
 	}
 
@@ -92,7 +108,9 @@ public static class SharedInfo {
 
 	private static Guid ModuleVersion => Assembly.GetExecutingAssembly().ManifestModule.ModuleVersionId;
 
+#if !EMBEDDED_IN_STEAMPLUSPLUS
 	private static string? CachedHomeDirectory;
+#endif
 
 	internal static class BuildInfo {
 #if ASF_VARIANT_DOCKER

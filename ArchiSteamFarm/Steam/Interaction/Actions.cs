@@ -42,6 +42,7 @@ using SteamKit2;
 
 namespace ArchiSteamFarm.Steam.Interaction;
 
+#pragma warning disable CA1724 // 类型名 Actions 与命名空间名称“Android.Service.Controls.Actions”整体或部分冲突。请更改其中任一名称以消除冲突。
 public sealed class Actions : IAsyncDisposable {
 	private static readonly SemaphoreSlim GiftCardsSemaphore = new(1, 1);
 

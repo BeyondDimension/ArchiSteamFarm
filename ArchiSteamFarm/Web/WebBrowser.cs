@@ -30,6 +30,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Localization;
 using ArchiSteamFarm.NLog;
@@ -37,6 +38,21 @@ using ArchiSteamFarm.Storage;
 using ArchiSteamFarm.Web.Responses;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
+#if OUTPUT_TYPE_LIBRARY
+#if __ANDROID__
+using HttpHandlerType = Xamarin.Android.Net.AndroidClientHandler;
+#elif __IOS__
+using HttpHandlerType = System.Net.Http.NSUrlSessionHandler;
+#else
+using HttpHandlerType = System.Net.Http.HttpClientHandler;
+#endif
+using CreateHttpHandlerArgs = System.ValueTuple<
+	bool,
+	System.Net.DecompressionMethods,
+	System.Net.CookieContainer,
+	System.Net.IWebProxy?,
+	int>;
+#endif
 
 namespace ArchiSteamFarm.Web;
 
@@ -57,10 +73,136 @@ public sealed class WebBrowser : IDisposable {
 
 	private readonly ArchiLogger ArchiLogger;
 	private readonly HttpClient HttpClient;
+#if OUTPUT_TYPE_LIBRARY
+	public HttpMessageHandler HttpClientHandler { get; private set; }
+#else
 	private readonly HttpClientHandler HttpClientHandler;
+#endif
+
+#if OUTPUT_TYPE_LIBRARY
+
+	/// <summary>
+	/// https://github.com/dotnet/runtime/blob/v6.0.0/src/libraries/System.Net.Http/src/System/Net/Http/SocketsHttpHandler/HttpNoProxy.cs
+	/// </summary>
+	private const string HttpNoProxy = "HttpNoProxy";
+
+	private static bool UseWebProxy([NotNullWhen(true)] IWebProxy? proxy)
+		=> proxy != null && proxy.GetType().Name != HttpNoProxy;
+
+	/// <summary>
+	/// set this delegate before startup can replace the HttpClientHandler implementation, for example, with WinHttpHandler.
+	/// </summary>
+	public static Func<CreateHttpHandlerArgs, HttpMessageHandler>? CreateHttpHandlerDelegate { get; set; }
+
+	public static THttpClientHandler CreateHttpHandler<THttpClientHandler>(CreateHttpHandlerArgs args) where THttpClientHandler : HttpHandlerType, new() {
+		THttpClientHandler handler = new() {
+			AllowAutoRedirect = args.Item1,
+#if !__IOS__
+			AutomaticDecompression = args.Item2,
+#endif
+			CookieContainer = args.Item3,
+		};
+#if !__IOS__
+		bool useProxy;
+		IWebProxy? proxy;
+		//#if OUTPUT_TYPE_LIBRARY
+		//		proxy = DefaultProxy;
+		//		if (UseWebProxy(proxy)) {
+		//			useProxy = true;
+		//		} else {
+		//			proxy = args.Item4;
+		//			useProxy = UseWebProxy(proxy);
+		//		}
+		//#else
+		proxy = args.Item4;
+		useProxy = UseWebProxy(proxy);
+		//#endif
+		if (useProxy) {
+			handler.Proxy = proxy;
+			handler.UseProxy = true;
+		}
+		if (!(args.Item5 < 1)) { // https://github.com/dotnet/runtime/blob/v6.0.0/src/libraries/System.Net.Http/src/System/Net/Http/SocketsHttpHandler/SocketsHttpHandler.cs#L157
+			handler.MaxConnectionsPerServer = args.Item5;
+		}
+#endif
+		return handler;
+	}
+
+#if NETCOREAPP
+	public static SocketsHttpHandler CreateSocketsHttpHandler(CreateHttpHandlerArgs args) {
+		SocketsHttpHandler handler = new() {
+			AllowAutoRedirect = args.Item1,
+			AutomaticDecompression = args.Item2,
+			CookieContainer = args.Item3,
+		};
+		bool useProxy;
+		IWebProxy? proxy;
+//#if OUTPUT_TYPE_LIBRARY
+//		proxy = DefaultProxy;
+//		if (UseWebProxy(proxy)) {
+//			useProxy = true;
+//		} else {
+//			proxy = args.Item4;
+//			useProxy = UseWebProxy(proxy);
+//		}
+//#else
+		proxy = args.Item4;
+		useProxy = UseWebProxy(proxy);
+//#endif
+		if (useProxy) {
+			handler.Proxy = proxy;
+			handler.UseProxy = true;
+		}
+		if (!(args.Item5 < 1)) { // https://github.com/dotnet/runtime/blob/v6.0.0/src/libraries/System.Net.Http/src/System/Net/Http/SocketsHttpHandler/SocketsHttpHandler.cs#L157
+			handler.MaxConnectionsPerServer = args.Item5;
+		}
+		return handler;
+	}
+#endif
+
+	private static HttpMessageHandler CreateHttpHandler(CreateHttpHandlerArgs args) {
+		HttpMessageHandler? handler = CreateHttpHandlerDelegate?.Invoke(args);
+		if (handler != null) {
+			return handler;
+		}
+#if NETCOREAPP
+		// Starting from net 5.0, SocketsHttpHandler and HttpClientHandler use the same implementation on non browser.
+		// https://github.com/dotnet/runtime/blob/v5.0.12/src/libraries/System.Net.Http/src/System/Net/Http/HttpClientHandler.cs
+		if (SocketsHttpHandler.IsSupported) {
+			return CreateSocketsHttpHandler(args);
+		}
+#endif
+		return CreateHttpHandler<HttpHandlerType>(args);
+	}
+#endif
 
 	internal WebBrowser(ArchiLogger archiLogger, IWebProxy? webProxy = null, bool extendedTimeout = false) {
 		ArchiLogger = archiLogger ?? throw new ArgumentNullException(nameof(archiLogger));
+
+#if OUTPUT_TYPE_LIBRARY
+
+		const bool allowAutoRedirect = false; // This must be false if we want to handle custom redirection schemes such as "steammobile://"
+		const DecompressionMethods automaticDecompression =
+#if NETFRAMEWORK
+			DecompressionMethods.Deflate | DecompressionMethods.GZip;
+#else
+			DecompressionMethods.All;
+#endif
+		int maxConnectionsPerServer =
+#if NET6_0_OR_GREATER
+			MaxConnections;
+#else
+			RuntimeMadness.IsRunningOnMono ? 0 : MaxConnections;
+#endif
+
+		CreateHttpHandlerArgs args = (allowAutoRedirect, automaticDecompression,
+				CookieContainer,
+				webProxy,
+				maxConnectionsPerServer);
+
+		HttpClientHandler = CreateHttpHandler(args);
+
+#else
 
 		HttpClientHandler = new HttpClientHandler {
 			AllowAutoRedirect = false, // This must be false if we want to handle custom redirection schemes such as "steammobile://"
@@ -85,6 +227,8 @@ public sealed class WebBrowser : IDisposable {
 		}
 #else
 		HttpClientHandler.MaxConnectionsPerServer = MaxConnections;
+#endif
+
 #endif
 
 		HttpClient = GenerateDisposableHttpClient(extendedTimeout);
@@ -800,6 +944,12 @@ public sealed class WebBrowser : IDisposable {
 #if NETFRAMEWORK
 		if (!RuntimeMadness.IsRunningOnMono) {
 			ServicePointManager.ReusePort = true;
+			// Xamarin.Android incompatible
+			// Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\System.dll
+			// [MonoTODO]
+			// public static bool ReusePort
+			// get return false;
+			// set throw new NotImplementedException();
 		}
 #else
 		ServicePointManager.ReusePort = true;

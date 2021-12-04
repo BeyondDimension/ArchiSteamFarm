@@ -19,13 +19,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if NETFRAMEWORK
+#if NETFRAMEWORK || USE_ASPNETCORE_2_2
 using IHost = Microsoft.AspNetCore.Hosting.IWebHost;
 using HostBuilder = Microsoft.AspNetCore.Hosting.WebHostBuilder;
 #endif
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.IPC.Controllers.Api;
 using ArchiSteamFarm.Localization;
@@ -37,6 +38,13 @@ using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog.Web;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Hosting.Server;
+#if OUTPUT_TYPE_LIBRARY
+using ArchiSteamFarm.Library;
+#endif
 
 namespace ArchiSteamFarm.IPC;
 
@@ -46,6 +54,25 @@ internal static class ArchiKestrel {
 	internal static HistoryTarget? HistoryTarget { get; private set; }
 
 	private static IHost? KestrelWebHost;
+
+#if OUTPUT_TYPE_LIBRARY
+	public static bool IsReady { get; private set; }
+
+	public static ICollection<string>? ServerAddresses {
+		get {
+			try {
+#if NETFRAMEWORK || USE_ASPNETCORE_2_2
+				return KestrelWebHost?.ServerFeatures.Get<IServerAddressesFeature>()?.Addresses;
+#else
+				return KestrelWebHost?.Services.GetService<IServer>()?.Features.Get<IServerAddressesFeature>()?.Addresses;
+#endif
+
+			} catch {
+			}
+			return null;
+		}
+	}
+#endif
 
 	internal static void OnNewHistoryTarget(HistoryTarget? historyTarget = null) {
 		if (HistoryTarget != null) {
@@ -69,8 +96,12 @@ internal static class ArchiKestrel {
 		// The order of dependency injection matters, pay attention to it
 		HostBuilder builder = new();
 
+#if OUTPUT_TYPE_LIBRARY
+		string websiteDirectory = ASFPathHelper.WebsiteDirectory;
+#else
 		string customDirectory = Path.Combine(Directory.GetCurrentDirectory(), SharedInfo.WebsiteDirectory);
 		string websiteDirectory = Directory.Exists(customDirectory) ? customDirectory : Path.Combine(AppContext.BaseDirectory, SharedInfo.WebsiteDirectory);
+#endif
 
 		// Set default content root
 		builder.UseContentRoot(SharedInfo.HomeDirectory);
@@ -106,7 +137,6 @@ internal static class ArchiKestrel {
 				if (Directory.Exists(websiteDirectory)) {
 					webBuilder.UseWebRoot(websiteDirectory);
 				}
-
 				// Now conditionally initialize settings that are not possible to override
 				if (customConfigExists) {
 					// Set up custom config to be used
@@ -116,7 +146,13 @@ internal static class ArchiKestrel {
 					webBuilder.UseKestrel(static (builderContext, options) => options.Configure(builderContext.Configuration.GetSection("Kestrel")));
 				} else {
 					// Use ASF defaults for Kestrel
-					webBuilder.UseKestrel(static options => options.ListenLocalhost(1242));
+					webBuilder.UseKestrel(static options => options.ListenLocalhost(
+#if OUTPUT_TYPE_LIBRARY
+						IArchiSteamFarmHelperService.Instance.IPCPortValue
+#else
+						1242
+#endif
+						));
 				}
 
 				// Specify Startup class for IPC
@@ -141,10 +177,16 @@ internal static class ArchiKestrel {
 		}
 
 		KestrelWebHost = kestrelWebHost;
+#if OUTPUT_TYPE_LIBRARY
+		IsReady = true;
+#endif
 		ASF.ArchiLogger.LogGenericInfo(Strings.IPCReady);
 	}
 
 	internal static async Task Stop() {
+#if OUTPUT_TYPE_LIBRARY
+		IsReady = false;
+#endif
 		if (KestrelWebHost == null) {
 			return;
 		}

@@ -21,21 +21,35 @@
 
 using System;
 using Newtonsoft.Json;
+#if OUTPUT_TYPE_LIBRARY
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
+#endif
 
 namespace ArchiSteamFarm.Steam.Cards;
 
-public sealed class Game : IEquatable<Game> {
+public sealed partial class Game : IEquatable<Game> {
 	[JsonProperty]
 	public uint AppID { get; }
+
+#if OUTPUT_TYPE_LIBRARY
+	public string ImageUrl => $"https://steamcdn-a.akamaihd.net/steam/apps/{AppID}/header.jpg";
+#endif
 
 	[JsonProperty]
 	public string GameName { get; }
 
 	internal readonly byte BadgeLevel;
 
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+#endif
 	[JsonProperty]
 	public ushort CardsRemaining { get; internal set; }
 
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+#endif
 	[JsonProperty]
 	public float HoursPlayed { get; internal set; }
 
@@ -55,3 +69,9 @@ public sealed class Game : IEquatable<Game> {
 	public override bool Equals(object? obj) => (obj != null) && ((obj == this) || (obj is Game game && Equals(game)));
 	public override int GetHashCode() => HashCode.Combine(AppID, BadgeLevel, GameName);
 }
+
+#if OUTPUT_TYPE_LIBRARY
+#pragma warning disable IDE0040 // 添加可访问性修饰符
+partial class Game : ReactiveObject { }
+#pragma warning restore IDE0040 // 添加可访问性修饰符
+#endif

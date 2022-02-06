@@ -7,7 +7,7 @@
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 		<!--<TargetFrameworks>netstandard2.1;net5.0;net6.0;net48;Xamarin.iOS10;MonoAndroid11.0;net6.0-android;net6.0-macos;net6.0-maccatalyst;net6.0-ios</TargetFrameworks>-->
 		<!--<TargetFrameworks>netstandard2.1;Xamarin.iOS10;MonoAndroid11.0;net5.0</TargetFrameworks>-->
-		<TargetFrameworks>netstandard2.1;net6.0;net6.0-windows;MonoAndroid11.0;Xamarin.iOS10</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net6.0;net6.0-windows;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
 		<SignAssembly>false</SignAssembly>
 		<PublicSign>false</PublicSign>
 		<!--(SignAssembly)对此程序集进行签名会导致编译失败(CompileAvaloniaXamlTask)-->
@@ -88,6 +88,7 @@
 		<Using Include="JustArchiNET.Madness" />
 		<Using Include="JustArchiNET.Madness.ArgumentNullExceptionMadness.ArgumentNullException" Alias="ArgumentNullException" />
 		<Using Include="JustArchiNET.Madness.ConvertMadness.Convert" Alias="Convert" />
+		<Using Include="JustArchiNET.Madness.EnumMadness.Enum" Alias="Enum" />
 		<Using Include="JustArchiNET.Madness.EnvironmentMadness.Environment" Alias="Environment" />
 		<Using Include="JustArchiNET.Madness.FileMadness.File" Alias="File" />
 		<Using Include="JustArchiNET.Madness.HashCodeMadness.HashCode" Alias="HashCode" />

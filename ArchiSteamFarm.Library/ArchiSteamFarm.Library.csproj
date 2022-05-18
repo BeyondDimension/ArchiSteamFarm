@@ -127,6 +127,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.WebSockets" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Configuration" />
+		<PackageReference Include="Microsoft.Net.Http.Headers" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS')) ">

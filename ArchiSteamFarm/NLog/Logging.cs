@@ -304,7 +304,7 @@ internal static class Logging {
 
 #if OUTPUT_TYPE_LIBRARY
 	private static async Task<string?> ConsoleShellReadLine(bool isMask) {
-		using CancellationTokenSource cts = new();
+		//using CancellationTokenSource cts = new();
 
 		try {
 			//CancellationToken token = cts.Token;
@@ -312,7 +312,7 @@ internal static class Logging {
 			//Utilities.InBackground(() => BeepUntilCanceled(token));
 			return GetUserInputFunc is not null ? await GetUserInputFunc.Invoke(isMask).ConfigureAwait(false) : null;
 		} finally {
-			cts.Cancel();
+			//cts.Cancel();
 		}
 	}
 #else

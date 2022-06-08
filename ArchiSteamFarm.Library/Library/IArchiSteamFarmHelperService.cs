@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using MSEXLog = Microsoft.Extensions.Logging;
 
 namespace ArchiSteamFarm.Library;
 
@@ -24,4 +25,9 @@ public interface IArchiSteamFarmHelperService {
 	/// </summary>
 	/// <returns></returns>
 	Task Restart();
+
+	/// <summary>
+	/// 
+	/// </summary>
+	MSEXLog.LogLevel MinimumLevel { get; }
 }

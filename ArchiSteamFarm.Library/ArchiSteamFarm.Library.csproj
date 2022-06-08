@@ -1,4 +1,4 @@
-<Project Sdk="MSBuild.Sdk.Extras">
+﻿<Project Sdk="MSBuild.Sdk.Extras">
 	<PropertyGroup>
 		<DefaultItemExcludes>$(DefaultItemExcludes);config/**;debug/**;logs/**;overlay/**</DefaultItemExcludes>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -10,7 +10,7 @@
 		<SignAssembly>false</SignAssembly>
 		<PublicSign>false</PublicSign>
 		<OutputType>Library</OutputType>
-		<AssemblyName>ArchiSteamFarm</AssemblyName>
+		<AssemblyName>ArchiSteamFarm.Library</AssemblyName>
 		<RootNamespace>ArchiSteamFarm</RootNamespace>
 		<RuntimeIdentifiers></RuntimeIdentifiers>
 		<DisableImplicitNamespaceImports>false</DisableImplicitNamespaceImports>
@@ -159,10 +159,10 @@
 		<Using Include="JustArchiNET.Madness.SHA256Madness.SHA256" Alias="SHA256" />
 		<Using Include="JustArchiNET.Madness.SHA512Madness.SHA512" Alias="SHA512" />
 		<Using Include="JustArchiNET.Madness.StringMadness.String" Alias="String" />
+		<Using Include="JustArchiNET.Madness.SupportedOSPlatformAttribute" Alias="SupportedOSPlatformAttribute" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS')) Or $(TargetFramework.StartsWith('netstandard')) ">
-		<Using Include="System.Runtime.Versioning.SupportedOSPlatformAttribute" Alias="SupportedOSPlatformAttribute" />
 		<PackageReference Include="OperatingSystem2" />
 	</ItemGroup>
 

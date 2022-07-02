@@ -21,11 +21,12 @@ public static class ArchiSteamFarmLibrary {
 	/// <param name="logFileDirectory"></param>
 	public static void Init(IIoc ioc, string appDataDirectory, string logFileDirectory) {
 		Ioc.Default = ioc;
-		AppDataDirectory = DirCreateByNotExists(Path.Combine(appDataDirectory, "ASF"));
+		string appDataDirectory_ = AppDataDirectory = DirCreateByNotExists(Path.Combine(appDataDirectory, "ASF"));
 		WebsiteDirectory = DirCreateByNotExists(Path.Combine(appDataDirectory, "ASF", "www"));
 		LogFileDirectory = logFileDirectory;
-		_ = DirCreateByNotExists(SharedInfo.ConfigDirectory);
-		_ = DirCreateByNotExists(SharedInfo.PluginsDirectory);
+		_ = DirCreateByNotExists(SharedInfo._ConfigDirectory = Path.Combine(appDataDirectory_, SharedInfo.ConfigDirectoryName));
+		_ = DirCreateByNotExists(SharedInfo._PluginsDirectory = Path.Combine(appDataDirectory_, SharedInfo.PluginsDirectoryName));
+		_ = DirCreateByNotExists(SharedInfo._DebugDirectory = Path.Combine(appDataDirectory_, SharedInfo.DebugDirectoryName));
 		TryUnPackASFUI();
 	}
 

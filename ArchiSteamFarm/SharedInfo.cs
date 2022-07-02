@@ -34,7 +34,16 @@ namespace ArchiSteamFarm;
 public static class SharedInfo {
 	[PublicAPI]
 #if OUTPUT_TYPE_LIBRARY
-	public static readonly string ConfigDirectory = HomeDirectory + Path.DirectorySeparatorChar + "config";
+	internal static string? _ConfigDirectory;
+	public static string ConfigDirectory {
+		get {
+			if (_ConfigDirectory == null) {
+				ArchiSteamFarmLibrary.ThrowInvalidOperationExceptionForMissingInitialization();
+			}
+			return _ConfigDirectory;
+		}
+	}
+	internal const string ConfigDirectoryName = "config";
 #else
 	public const string ConfigDirectory = "config";
 #endif
@@ -48,7 +57,16 @@ public static class SharedInfo {
 	internal const string AssemblyName = nameof(ArchiSteamFarm);
 	internal const string DatabaseExtension = ".db";
 #if OUTPUT_TYPE_LIBRARY
-	internal static readonly string DebugDirectory = HomeDirectory + Path.DirectorySeparatorChar + "debug";
+	internal static string? _DebugDirectory;
+	internal static string DebugDirectory {
+		get {
+			if (_DebugDirectory == null) {
+				ArchiSteamFarmLibrary.ThrowInvalidOperationExceptionForMissingInitialization();
+			}
+			return _DebugDirectory;
+		}
+	}
+	internal const string DebugDirectoryName = "debug";
 #else
 	internal const string DebugDirectory = "debug";
 #endif
@@ -72,7 +90,16 @@ public static class SharedInfo {
 	internal const string LolcatCultureName = "qps-Ploc";
 	internal const string MobileAuthenticatorExtension = ".maFile";
 #if OUTPUT_TYPE_LIBRARY
-	internal static readonly string PluginsDirectory = HomeDirectory + Path.DirectorySeparatorChar + "plugins";
+	internal static string? _PluginsDirectory;
+	internal static string PluginsDirectory {
+		get {
+			if (_PluginsDirectory == null) {
+				ArchiSteamFarmLibrary.ThrowInvalidOperationExceptionForMissingInitialization();
+			}
+			return _PluginsDirectory;
+		}
+	}
+	internal const string PluginsDirectoryName = "plugins";
 #else
 	internal const string PluginsDirectory = "plugins";
 #endif

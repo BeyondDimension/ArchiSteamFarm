@@ -133,13 +133,16 @@ internal static class ArchiKestrel {
 				logging.ClearProviders();
 #if OUTPUT_TYPE_LIBRARY
 				logging.SetMinimumLevel(IArchiSteamFarmHelperService.Instance.MinimumLevel);
+				logging.AddNLogWeb(LogManager.LogFactory, null);
 #else
 				logging.SetMinimumLevel(Debugging.IsUserDebugging ? LogLevel.Trace : LogLevel.Warning);
 #endif
 			}
 		);
 
+#if !OUTPUT_TYPE_LIBRARY
 		builder.UseNLog();
+#endif
 
 		builder.ConfigureWebHostDefaults(
 			webBuilder => {

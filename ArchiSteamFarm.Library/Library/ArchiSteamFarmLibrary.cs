@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using ICSharpCode.SharpZipLib.Tar;
+using NLog;
 using static ArchiSteamFarm.Library.ASFPathHelper;
 
 namespace ArchiSteamFarm.Library;
@@ -13,14 +14,19 @@ namespace ArchiSteamFarm.Library;
 /// 
 /// </summary>
 public static class ArchiSteamFarmLibrary {
+	/// <inheritdoc cref="LogManager.LogFactory"/>
+	public static LogFactory? LogFactory { get; private set; }
+
 	/// <summary>
 	/// Initialize ArchiSteamFarmLibrary.
 	/// </summary>
 	/// <param name="ioc"></param>
 	/// <param name="appDataDirectory"></param>
 	/// <param name="logFileDirectory"></param>
-	public static void Init(IIoc ioc, string appDataDirectory, string logFileDirectory) {
+	/// <param name="logFactory"></param>
+	public static void Init(IIoc ioc, string appDataDirectory, string logFileDirectory, LogFactory? logFactory = null) {
 		Ioc.Default = ioc;
+		LogFactory = logFactory;
 		string appDataDirectory_ = AppDataDirectory = DirCreateByNotExists(Path.Combine(appDataDirectory, "ASF"));
 		WebsiteDirectory = DirCreateByNotExists(Path.Combine(appDataDirectory, "ASF", "www"));
 		LogFileDirectory = logFileDirectory;

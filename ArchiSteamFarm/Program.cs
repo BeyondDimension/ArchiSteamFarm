@@ -183,8 +183,10 @@ internal static class Program {
 		// throw new PlatformNotSupportedException();
 #endif
 
+#if !OUTPUT_TYPE_LIBRARY
 		// Add support for custom encodings
 		Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
 
 		// Add support for custom logging targets
 		Target.Register<HistoryTarget>(HistoryTarget.TargetName);
@@ -455,10 +457,8 @@ internal static class Program {
 			await Task.Delay(1000).ConfigureAwait(false);
 		}
 
-#if !OUTPUT_TYPE_LIBRARY
 		// Flush all the pending writes to log files
 		LogManager.Flush();
-#endif
 
 		// Unregister the process from single instancing
 		OS.UnregisterProcess();

@@ -14,19 +14,14 @@ namespace ArchiSteamFarm.Library;
 /// 
 /// </summary>
 public static class ArchiSteamFarmLibrary {
-	/// <inheritdoc cref="LogManager.LogFactory"/>
-	public static LogFactory? LogFactory { get; private set; }
-
 	/// <summary>
 	/// Initialize ArchiSteamFarmLibrary.
 	/// </summary>
 	/// <param name="ioc"></param>
 	/// <param name="appDataDirectory"></param>
 	/// <param name="logFileDirectory"></param>
-	/// <param name="logFactory"></param>
-	public static void Init(IIoc ioc, string appDataDirectory, string logFileDirectory, LogFactory? logFactory = null) {
+	public static void Init(IIoc ioc, string appDataDirectory, string logFileDirectory) {
 		Ioc.Default = ioc;
-		LogFactory = logFactory;
 		string appDataDirectory_ = AppDataDirectory = DirCreateByNotExists(Path.Combine(appDataDirectory, "ASF"));
 		WebsiteDirectory = DirCreateByNotExists(Path.Combine(appDataDirectory, "ASF", "www"));
 		LogFileDirectory = logFileDirectory;

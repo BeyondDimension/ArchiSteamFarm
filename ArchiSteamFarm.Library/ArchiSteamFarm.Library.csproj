@@ -4,9 +4,11 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-		<TargetFrameworks>netstandard2.1;net6.0;net6.0-android;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
+		<!--<TargetFrameworks>netstandard2.1;net6.0;net6.0-android;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net6.0-windows;net6.0-ios</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(TargetFrameworks);net6.0-ios</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(TargetFrameworks);net6.0-ios</TargetFrameworks>-->
+		<TargetFrameworks>netstandard2.1;net6.0;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net6.0-windows</TargetFrameworks>
 		<SignAssembly>false</SignAssembly>
 		<PublicSign>false</PublicSign>
 		<OutputType>Library</OutputType>
@@ -21,7 +23,7 @@
 		<RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
 		<PackageIcon>ASF_184x184.png</PackageIcon>
 		<PackageId>ArchiSteamFarm.Library</PackageId>
-		<Version>5.2.6.3-preview.220608</Version>
+		<Version>5.2.6.3-preview.220713</Version>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">

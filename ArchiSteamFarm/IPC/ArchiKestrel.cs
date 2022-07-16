@@ -133,7 +133,7 @@ internal static class ArchiKestrel {
 				logging.ClearProviders();
 #if OUTPUT_TYPE_LIBRARY
 				logging.SetMinimumLevel(IArchiSteamFarmHelperService.Instance.MinimumLevel);
-				logging.AddNLogWeb(LogManager.LogFactory, null);
+				logging.AddNLogWeb(LogManager.LogFactory, new NLogAspNetCoreOptions { ShutdownOnDispose = false });
 #else
 				logging.SetMinimumLevel(Debugging.IsUserDebugging ? LogLevel.Trace : LogLevel.Warning);
 #endif

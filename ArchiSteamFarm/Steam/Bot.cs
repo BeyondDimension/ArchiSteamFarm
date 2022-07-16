@@ -55,10 +55,14 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using SteamKit2;
 using SteamKit2.Internal;
+#if OUTPUT_TYPE_LIBRARY
+using ReactiveUI;
+using ReactiveUI.Fody.Helpers;
+#endif
 
 namespace ArchiSteamFarm.Steam;
 
-public sealed class Bot : IAsyncDisposable, IDisposable {
+public sealed partial class Bot : IAsyncDisposable, IDisposable {
 	internal const ushort CallbackSleep = 500; // In milliseconds
 	internal const byte MinCardsPerBadge = 5;
 
@@ -71,7 +75,7 @@ public sealed class Bot : IAsyncDisposable, IDisposable {
 	[PublicAPI]
 	public static IReadOnlyDictionary<string, Bot>? BotsReadOnly => Bots;
 
-	internal static ConcurrentDictionary<string, Bot>? Bots { get; private set; }
+	internal static ConcurrentDictionary<string, Bot>? Bots { get; set; }
 	internal static StringComparer? BotsComparer { get; private set; }
 	internal static EOSType OSType { get; private set; } = EOSType.Unknown;
 
@@ -186,10 +190,16 @@ public sealed class Bot : IAsyncDisposable, IDisposable {
 	[PublicAPI]
 	public BotConfig BotConfig { get; private set; }
 
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+#endif
 	[JsonProperty]
 	[PublicAPI]
 	public bool KeepRunning { get; private set; }
 
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+#endif
 	[JsonProperty]
 	[PublicAPI]
 	public string? Nickname { get; private set; }
@@ -202,17 +212,35 @@ public sealed class Bot : IAsyncDisposable, IDisposable {
 	[PublicAPI]
 	public ASF.EUserInputType RequiredInput { get; private set; }
 
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+#endif
 	[JsonProperty]
 	[PublicAPI]
 	public ulong SteamID { get; private set; }
 
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+#endif
 	[JsonProperty]
 	[PublicAPI]
 	public long WalletBalance { get; private set; }
 
+#if OUTPUT_TYPE_LIBRARY
+	public decimal WalletBalanceM => WalletBalance / 100m;
+#endif
+
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+#endif
 	[JsonProperty]
 	[PublicAPI]
 	public ECurrencyCode WalletCurrency { get; private set; }
+
+#if OUTPUT_TYPE_LIBRARY
+	[Reactive]
+	public string? AvatarUrl { get; private set; }
+#endif
 
 	internal bool PlayingBlocked { get; private set; }
 	internal bool PlayingWasBlocked { get; private set; }
@@ -1715,9 +1743,11 @@ public sealed class Bot : IAsyncDisposable, IDisposable {
 			Disconnect();
 		}
 
+#if !OUTPUT_TYPE_LIBRARY
 		if (!skipShutdownEvent) {
 			Utilities.InBackground(Events.OnBotShutdown);
 		}
+#endif
 	}
 
 	internal bool TryImportAuthenticator(MobileAuthenticator authenticator) {
@@ -1924,6 +1954,11 @@ public sealed class Bot : IAsyncDisposable, IDisposable {
 			TimeSpan timeSpan = TimeSpan.FromMilliseconds(CallbackSleep);
 
 			while (KeepRunning || SteamClient.IsConnected) {
+#if OUTPUT_TYPE_LIBRARY
+				if (Logging.IsWaitingForUserInput) {
+					continue;
+				}
+#endif
 				CallbackManager.RunWaitAllCallbacks(timeSpan);
 			}
 		} catch (Exception e) {
@@ -3037,6 +3072,12 @@ public sealed class Bot : IAsyncDisposable, IDisposable {
 		AvatarHash = avatarHash;
 		Nickname = callback.Name;
 
+#if OUTPUT_TYPE_LIBRARY
+		if (!string.IsNullOrEmpty(AvatarHash)) {
+			AvatarUrl = $"https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/{AvatarHash[..2]}/{AvatarHash}_full.jpg";
+		}
+#endif
+
 		if (RemoteCommunication != null) {
 			Utilities.InBackground(() => RemoteCommunication.OnPersonaState(callback.Name, avatarHash));
 		}
@@ -3583,3 +3624,9 @@ public sealed class Bot : IAsyncDisposable, IDisposable {
 		SentryFile
 	}
 }
+
+#if OUTPUT_TYPE_LIBRARY
+#pragma warning disable IDE0040 // 添加可访问性修饰符
+partial class Bot : ReactiveObject { }
+#pragma warning restore IDE0040 // 添加可访问性修饰符
+#endif

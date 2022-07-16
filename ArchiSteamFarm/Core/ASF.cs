@@ -127,9 +127,16 @@ public static class ASF {
 
 		Bot.Init(botsComparer, customMachineInfoProvider);
 
+#if !OUTPUT_TYPE_LIBRARY
 		if (!Program.Service && !GlobalConfig.Headless && !Console.IsInputRedirected) {
+			// Console.IsInputRedirected
+			// Xamarin.Android incompatible
+			// Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v1.0\System.dll
+			// public static bool IsInputRedirected
+			// throw new PlatformNotSupportedException();
 			Logging.StartInteractiveConsole();
 		}
+#endif
 
 		if (GlobalConfig.IPC) {
 			await ArchiKestrel.Start().ConfigureAwait(false);
@@ -482,15 +489,29 @@ public static class ASF {
 	private static async void OnAutoUpdatesTimer(object? state = null) => await UpdateAndRestart().ConfigureAwait(false);
 
 	private static async void OnChanged(object sender, FileSystemEventArgs e) {
+#if OUTPUT_TYPE_LIBRARY
+		if (sender == null || e == null) {
+			return;
+		}
+#else
 		ArgumentNullException.ThrowIfNull(sender);
 		ArgumentNullException.ThrowIfNull(e);
+#endif
 
 		if (string.IsNullOrEmpty(e.Name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.Name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(e.FullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.FullPath));
+#endif
 		}
 
 		await OnChangedFile(e.Name, e.FullPath).ConfigureAwait(false);
@@ -498,11 +519,19 @@ public static class ASF {
 
 	private static async Task OnChangedConfigFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		await OnCreatedConfigFile(name, fullPath).ConfigureAwait(false);
@@ -510,7 +539,11 @@ public static class ASF {
 
 	private static async Task OnChangedConfigFile(string name) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (!name.Equals(SharedInfo.IPCConfigFile, StringComparison.OrdinalIgnoreCase) || (GlobalConfig?.IPC != true)) {
@@ -528,11 +561,19 @@ public static class ASF {
 
 	private static async Task OnChangedFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		string extension = Path.GetExtension(name);
@@ -552,26 +593,47 @@ public static class ASF {
 
 	private static async Task OnChangedKeysFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
-
 		await OnCreatedKeysFile(name, fullPath).ConfigureAwait(false);
 	}
 
 	private static async void OnCreated(object sender, FileSystemEventArgs e) {
+#if OUTPUT_TYPE_LIBRARY
+		if (sender == null || e == null) {
+			return;
+		}
+#else
 		ArgumentNullException.ThrowIfNull(sender);
 		ArgumentNullException.ThrowIfNull(e);
+#endif
 
 		if (string.IsNullOrEmpty(e.Name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.Name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(e.FullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.FullPath));
+#endif
 		}
 
 		await OnCreatedFile(e.Name, e.FullPath).ConfigureAwait(false);
@@ -579,11 +641,19 @@ public static class ASF {
 
 	private static async Task OnCreatedConfigFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		string extension = Path.GetExtension(name);
@@ -602,11 +672,19 @@ public static class ASF {
 
 	private static async Task OnCreatedFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		string extension = Path.GetExtension(name);
@@ -626,15 +704,27 @@ public static class ASF {
 
 	private static async Task OnCreatedJsonFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		if (Bot.Bots == null) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(Bot.Bots));
+#endif
 		}
 
 		string botName = Path.GetFileNameWithoutExtension(name);
@@ -671,15 +761,27 @@ public static class ASF {
 
 	private static async Task OnCreatedKeysFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		if (Bot.Bots == null) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(Bot.Bots));
+#endif
 		}
 
 		string botName = Path.GetFileNameWithoutExtension(name);
@@ -695,20 +797,33 @@ public static class ASF {
 		if (!Bot.Bots.TryGetValue(botName, out Bot? bot)) {
 			return;
 		}
-
 		await bot.ImportKeysToRedeem(fullPath).ConfigureAwait(false);
 	}
 
 	private static async void OnDeleted(object sender, FileSystemEventArgs e) {
+#if OUTPUT_TYPE_LIBRARY
+		if (sender == null || e == null) {
+			return;
+		}
+#else
 		ArgumentNullException.ThrowIfNull(sender);
 		ArgumentNullException.ThrowIfNull(e);
+#endif
 
 		if (string.IsNullOrEmpty(e.Name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.Name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(e.FullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.FullPath));
+#endif
 		}
 
 		await OnDeletedFile(e.Name, e.FullPath).ConfigureAwait(false);
@@ -716,11 +831,19 @@ public static class ASF {
 
 	private static async Task OnDeletedConfigFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		string extension = Path.GetExtension(name);
@@ -739,11 +862,19 @@ public static class ASF {
 
 	private static async Task OnDeletedFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		string extension = Path.GetExtension(name);
@@ -759,15 +890,27 @@ public static class ASF {
 
 	private static async Task OnDeletedJsonConfigFile(string name, string fullPath) {
 		if (string.IsNullOrEmpty(name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(fullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new ArgumentNullException(nameof(fullPath));
+#endif
 		}
 
 		if (Bot.Bots == null) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(Bot.Bots));
+#endif
 		}
 
 		string botName = Path.GetFileNameWithoutExtension(name);
@@ -819,23 +962,45 @@ public static class ASF {
 	}
 
 	private static async void OnRenamed(object sender, RenamedEventArgs e) {
+#if OUTPUT_TYPE_LIBRARY
+		if (sender == null || e == null) {
+			return;
+		}
+#else
 		ArgumentNullException.ThrowIfNull(sender);
 		ArgumentNullException.ThrowIfNull(e);
+#endif
 
 		if (string.IsNullOrEmpty(e.OldName)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.OldName));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(e.OldFullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.OldFullPath));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(e.Name)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.Name));
+#endif
 		}
 
 		if (string.IsNullOrEmpty(e.FullPath)) {
+#if OUTPUT_TYPE_LIBRARY
+			return;
+#else
 			throw new InvalidOperationException(nameof(e.FullPath));
+#endif
 		}
 
 		await OnDeletedFile(e.OldName, e.OldFullPath).ConfigureAwait(false);
@@ -984,6 +1149,7 @@ public static class ASF {
 					}
 
 					break;
+#if !OUTPUT_TYPE_LIBRARY
 				case SharedInfo.ArchivalLogsDirectory:
 				case SharedInfo.ConfigDirectory:
 				case SharedInfo.DebugDirectory:
@@ -991,6 +1157,7 @@ public static class ASF {
 				case SharedInfo.UpdateDirectory:
 					// Files in those directories we want to keep in their current place
 					continue;
+#endif
 				default:
 					// Files in subdirectories of those directories we want to keep as well
 					if (Utilities.RelativeDirectoryStartsWith(relativeDirectoryName, SharedInfo.ArchivalLogsDirectory, SharedInfo.ConfigDirectory, SharedInfo.DebugDirectory, SharedInfo.PluginsDirectory, SharedInfo.UpdateDirectory)) {

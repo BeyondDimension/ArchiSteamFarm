@@ -25,12 +25,28 @@ using System.Reflection;
 using ArchiSteamFarm.Core;
 using ArchiSteamFarm.Plugins;
 using JetBrains.Annotations;
+#if OUTPUT_TYPE_LIBRARY
+using ArchiSteamFarm.Library;
+#endif
 
 namespace ArchiSteamFarm;
 
 public static class SharedInfo {
 	[PublicAPI]
+#if OUTPUT_TYPE_LIBRARY
+	internal static string? _ConfigDirectory;
+	public static string ConfigDirectory {
+		get {
+			if (_ConfigDirectory == null) {
+				ArchiSteamFarmLibrary.ThrowInvalidOperationExceptionForMissingInitialization();
+			}
+			return _ConfigDirectory;
+		}
+	}
+	internal const string ConfigDirectoryName = "config";
+#else
 	public const string ConfigDirectory = "config";
+#endif
 
 	internal const ulong ArchiSteamID = 76561198006963719;
 	internal const string ArchivalLogFile = "log.{#}.txt";
@@ -40,7 +56,20 @@ public static class SharedInfo {
 	internal const string AssemblyDocumentation = $"{AssemblyName}.xml";
 	internal const string AssemblyName = nameof(ArchiSteamFarm);
 	internal const string DatabaseExtension = ".db";
+#if OUTPUT_TYPE_LIBRARY
+	internal static string? _DebugDirectory;
+	internal static string DebugDirectory {
+		get {
+			if (_DebugDirectory == null) {
+				ArchiSteamFarmLibrary.ThrowInvalidOperationExceptionForMissingInitialization();
+			}
+			return _DebugDirectory;
+		}
+	}
+	internal const string DebugDirectoryName = "debug";
+#else
 	internal const string DebugDirectory = "debug";
+#endif
 	internal const string EnvironmentVariableCryptKey = $"{ASF}_CRYPTKEY";
 	internal const string EnvironmentVariableNetworkGroup = $"{ASF}_NETWORK_GROUP";
 	internal const string EnvironmentVariablePath = $"{ASF}_PATH";
@@ -60,7 +89,20 @@ public static class SharedInfo {
 	internal const string LogFile = "log.txt";
 	internal const string LolcatCultureName = "qps-Ploc";
 	internal const string MobileAuthenticatorExtension = ".maFile";
+#if OUTPUT_TYPE_LIBRARY
+	internal static string? _PluginsDirectory;
+	internal static string PluginsDirectory {
+		get {
+			if (_PluginsDirectory == null) {
+				ArchiSteamFarmLibrary.ThrowInvalidOperationExceptionForMissingInitialization();
+			}
+			return _PluginsDirectory;
+		}
+	}
+	internal const string PluginsDirectoryName = "plugins";
+#else
 	internal const string PluginsDirectory = "plugins";
+#endif
 	internal const string ProjectURL = $"https://github.com/{GithubRepo}";
 	internal const string SentryHashExtension = ".bin";
 	internal const ushort ShortInformationDelay = InformationDelay / 2;
@@ -70,6 +112,9 @@ public static class SharedInfo {
 
 	internal static string HomeDirectory {
 		get {
+#if OUTPUT_TYPE_LIBRARY
+			return ASFPathHelper.AppDataDirectory;
+#else
 			if (!string.IsNullOrEmpty(CachedHomeDirectory)) {
 				// ReSharper disable once RedundantSuppressNullableWarningExpression - required for .NET Framework
 				return CachedHomeDirectory!;
@@ -83,6 +128,7 @@ public static class SharedInfo {
 			CachedHomeDirectory = Path.GetFileNameWithoutExtension(OS.ProcessFileName) == AssemblyName ? Path.GetDirectoryName(OS.ProcessFileName) ?? AppContext.BaseDirectory : AppContext.BaseDirectory;
 
 			return CachedHomeDirectory;
+#endif
 		}
 	}
 
@@ -92,7 +138,9 @@ public static class SharedInfo {
 
 	private static Guid ModuleVersion => Assembly.GetExecutingAssembly().ManifestModule.ModuleVersionId;
 
+#if !OUTPUT_TYPE_LIBRARY
 	private static string? CachedHomeDirectory;
+#endif
 
 	internal static class BuildInfo {
 #if ASF_VARIANT_DOCKER

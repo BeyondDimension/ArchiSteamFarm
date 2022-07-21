@@ -23,7 +23,7 @@
 		<RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
 		<PackageIcon>ASF_184x184.png</PackageIcon>
 		<PackageId>ArchiSteamFarm.Library</PackageId>
-		<Version>5.2.6.3-preview.220713</Version>
+		<Version>5.2.7.7-preview.220721</Version>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">

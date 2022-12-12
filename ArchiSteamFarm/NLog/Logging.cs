@@ -103,8 +103,13 @@ internal static class Logging {
 			try {
 				switch (userInputType) {
 					case ASF.EUserInputType.Cryptkey:
+#if OUTPUT_TYPE_LIBRARY
+						ASF.ArchiLogger.LogGenericInfo(Bot.FormatBotResponse(Strings.UserInputCryptkey, botName));
+						result = await ConsoleShellReadLine(false).ConfigureAwait(false);
+#else
 						Console.Write(Bot.FormatBotResponse(Strings.UserInputCryptkey, botName));
 						result = ConsoleReadLineMasked();
+#endif
 
 						break;
 					case ASF.EUserInputType.Login:

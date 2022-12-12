@@ -7,7 +7,8 @@
 		<!--<TargetFrameworks>netstandard2.1;net6.0;net6.0-android;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net6.0-windows;net6.0-ios</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(TargetFrameworks);net6.0-ios</TargetFrameworks>-->
-		<TargetFrameworks>netstandard2.1;net6.0;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
+		<!--<TargetFrameworks>netstandard2.1;net6.0;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>-->
+		<TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net6.0-windows</TargetFrameworks>
 		<SignAssembly>false</SignAssembly>
 		<PublicSign>false</PublicSign>
@@ -23,7 +24,7 @@
 		<RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
 		<PackageIcon>ASF_184x184.png</PackageIcon>
 		<PackageId>ArchiSteamFarm.Library</PackageId>
-		<Version>5.2.8.4-preview.220814</Version>
+		<Version>5.3.2.4-preview.221212</Version>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
@@ -146,6 +147,7 @@
 
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('netstandard')) Or $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS')) ">
 		<PackageReference Include="JustArchiNET.Madness" />
+		<PackageReference Include="TA.System.Runtime.CompilerServices.RuntimeHelpers.GetSubArray" />
 		<Using Include="JustArchiNET.Madness" />
 		<Using Include="JustArchiNET.Madness.ArgumentNullExceptionMadness.ArgumentNullException" Alias="ArgumentNullException" />
 		<Using Include="JustArchiNET.Madness.ArrayMadness.Array" Alias="Array" />
@@ -155,13 +157,13 @@
 		<Using Include="JustArchiNET.Madness.FileMadness.File" Alias="File" />
 		<Using Include="JustArchiNET.Madness.HashCodeMadness.HashCode" Alias="HashCode" />
 		<Using Include="JustArchiNET.Madness.HMACSHA1Madness.HMACSHA1" Alias="HMACSHA1" />
+		<Using Include="JustArchiNET.Madness.HttpRequestExceptionMadness.HttpRequestException" Alias="HttpRequestException" />
 		<Using Include="JustArchiNET.Madness.OperatingSystemMadness.OperatingSystem" Alias="OperatingSystem" />
 		<Using Include="JustArchiNET.Madness.PathMadness.Path" Alias="Path" />
 		<Using Include="JustArchiNET.Madness.RandomMadness.Random" Alias="Random" />
 		<Using Include="JustArchiNET.Madness.SHA256Madness.SHA256" Alias="SHA256" />
 		<Using Include="JustArchiNET.Madness.SHA512Madness.SHA512" Alias="SHA512" />
 		<Using Include="JustArchiNET.Madness.StringMadness.String" Alias="String" />
-		<Using Include="JustArchiNET.Madness.SupportedOSPlatformAttribute" Alias="SupportedOSPlatformAttribute" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('MonoAndroid')) Or $(TargetFramework.StartsWith('Xamarin.iOS')) Or $(TargetFramework.StartsWith('netstandard')) ">

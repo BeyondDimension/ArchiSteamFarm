@@ -1,4 +1,4 @@
-<Project Sdk="MSBuild.Sdk.Extras">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<DefaultItemExcludes>$(DefaultItemExcludes);config/**;debug/**;logs/**;overlay/**</DefaultItemExcludes>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -7,8 +7,8 @@
 		<!--<TargetFrameworks>netstandard2.1;net6.0;net6.0-android;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net6.0-windows;net6.0-ios</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(TargetFrameworks);net6.0-ios</TargetFrameworks>-->
-		<TargetFrameworks>netstandard2.1;net6.0;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net6.0-windows</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net7.0;net7.0-android</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net7.0-windows</TargetFrameworks>
 		<SignAssembly>false</SignAssembly>
 		<PublicSign>false</PublicSign>
 		<OutputType>Library</OutputType>

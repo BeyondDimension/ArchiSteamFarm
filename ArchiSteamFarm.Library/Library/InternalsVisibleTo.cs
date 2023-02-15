@@ -9,3 +9,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("System.Application.SteamTools.Client.Avalonia")]
 [assembly: InternalsVisibleTo("Xamarin.Forms.Platform.Android.UnitTests")]
 [assembly: InternalsVisibleTo("Assembly-CSharp")]
+[assembly: InternalsVisibleTo("BD.WTTS.Client")]

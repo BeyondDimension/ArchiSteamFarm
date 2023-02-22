@@ -92,7 +92,7 @@ public sealed class WebBrowser : IDisposable {
 	/// <summary>
 	/// set this delegate before startup can replace the HttpClientHandler implementation, for example, with WinHttpHandler.
 	/// </summary>
-	public static Func<CreateHttpHandlerArgs, HttpMessageHandler>? CreateHttpHandlerDelegate { get; set; }
+	public static Func<CreateHttpHandlerArgs, HttpMessageHandler?>? CreateHttpHandlerDelegate { get; set; }
 
 	public static THttpClientHandler CreateHttpHandler<THttpClientHandler>(CreateHttpHandlerArgs args) where THttpClientHandler : HttpHandlerType, new() {
 		THttpClientHandler handler = new() {
@@ -137,18 +137,18 @@ public sealed class WebBrowser : IDisposable {
 		};
 		bool useProxy;
 		IWebProxy? proxy;
-//#if OUTPUT_TYPE_LIBRARY
-//		proxy = DefaultProxy;
-//		if (UseWebProxy(proxy)) {
-//			useProxy = true;
-//		} else {
-//			proxy = args.Item4;
-//			useProxy = UseWebProxy(proxy);
-//		}
-//#else
+		//#if OUTPUT_TYPE_LIBRARY
+		//		proxy = DefaultProxy;
+		//		if (UseWebProxy(proxy)) {
+		//			useProxy = true;
+		//		} else {
+		//			proxy = args.Item4;
+		//			useProxy = UseWebProxy(proxy);
+		//		}
+		//#else
 		proxy = args.Item4;
 		useProxy = UseWebProxy(proxy);
-//#endif
+		//#endif
 		if (useProxy) {
 			handler.Proxy = proxy;
 			handler.UseProxy = true;

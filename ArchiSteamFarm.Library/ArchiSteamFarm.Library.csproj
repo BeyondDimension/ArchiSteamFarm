@@ -7,7 +7,7 @@
 		<!--<TargetFrameworks>netstandard2.1;net6.0;net6.0-android;MonoAndroid12.0;Xamarin.iOS10</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net6.0-windows;net6.0-ios</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(TargetFrameworks);net6.0-ios</TargetFrameworks>-->
-		<TargetFrameworks>netstandard2.1;net7.0;net7.0-android</TargetFrameworks>
+		<TargetFrameworks>net7.0</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net7.0-windows</TargetFrameworks>
 		<SignAssembly>false</SignAssembly>
 		<PublicSign>false</PublicSign>
